@@ -66,7 +66,7 @@ export default function NavBar() {
   return (
     <nav className="nav" aria-label="Main navigation">
       <Link href="/" className="brand">
-        <span className="brand-mark" aria-hidden="true">🦉</span>
+        <img className="brand-mark" src="/icons/icon-192.png" alt="" aria-hidden="true" width={42} height={42} />
         <span>Pantry Owl</span>
       </Link>
       <div className="nav-actions">
