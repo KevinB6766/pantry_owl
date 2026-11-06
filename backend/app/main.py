@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Optional
+from uuid import UUID
 
 import httpx
 from postgrest.exceptions import APIError
@@ -11,9 +12,10 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from .auth import current_user_id  # noqa: E402
 from .db import supabase  # noqa: E402
 from .nutrition import get_nutrition  # noqa: E402
+from .security import current_profile, require_roles  # noqa: E402
+from .workflows import router as workflow_router  # noqa: E402
 
 app = FastAPI(title="Pantry Owl API")
 
@@ -23,24 +25,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(workflow_router)
 
 
 @app.get("/health")
 def health():
     return {"ok": True}
-
-
-def require_admin(user_id: str = Depends(current_user_id)) -> str:
-    profile = (
-        supabase.table("profiles")
-        .select("role")
-        .eq("id", user_id)
-        .execute()
-        .data
-    )
-    if not profile or profile[0]["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return user_id
 
 
 def validate_barcode(barcode: str) -> str:
@@ -50,7 +40,7 @@ def validate_barcode(barcode: str) -> str:
 
 
 @app.get("/admin/barcode/{barcode}")
-def lookup_barcode(barcode: str, _: str = Depends(require_admin)):
+def lookup_barcode(barcode: str, _: dict = Depends(require_roles("admin"))):
     validate_barcode(barcode)
     try:
         response = httpx.get(
@@ -95,12 +85,14 @@ class AdminItemCreate(BaseModel):
     ingredients: Optional[str] = Field(default=None, max_length=10000)
     weight: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=2000)
+    nutrition_label_image_url: Optional[str] = Field(default=None, max_length=2000)
+    extra_images: list[str] = Field(default_factory=list, max_length=20)
     nutrition_query: Optional[str] = Field(default=None, max_length=200)
     price: Optional[float] = Field(default=None, ge=0)
 
 
 @app.post("/admin/items", status_code=201)
-def create_admin_item(entry: AdminItemCreate, _: str = Depends(require_admin)):
+def create_admin_item(entry: AdminItemCreate, _: dict = Depends(require_roles("admin"))):
     duplicate = (
         supabase.table("items")
         .select("id")
@@ -129,21 +121,45 @@ def tags():
 
 
 @app.get("/items")
-def items(tag: Optional[str] = None, q: Optional[str] = None):
+def items(tag: Optional[str] = None, q: Optional[str] = None, location_id: Optional[UUID] = None):
     query = supabase.table("items").select("*").order("name")
     if tag:
         query = query.contains("tags", [tag.strip().lower()])
     if q:
         query = query.ilike("name", f"%{q}%")
-    return query.execute().data
+    result = query.execute().data
+    if location_id is not None:
+        stock_rows = (
+            supabase.table("location_items")
+            .select("item_id, amount, available, limit_per_person, points_cost_override")
+            .eq("location_id", str(location_id))
+            .execute()
+            .data
+        )
+        stock = {row["item_id"]: row for row in stock_rows}
+        for row in result:
+            row["location_stock"] = stock.get(row["id"])
+    return result
 
 
 @app.get("/items/{item_id}")
-def item(item_id: int):
+def item(item_id: int, location_id: Optional[UUID] = None):
     res = supabase.table("items").select("*").eq("id", item_id).execute()
     if not res.data:
         raise HTTPException(404, "Item not found")
-    return res.data[0]
+    row = res.data[0]
+    if location_id is not None:
+        stock = (
+            supabase.table("location_items")
+            .select("item_id, amount, available, limit_per_person, points_cost_override")
+            .eq("location_id", str(location_id))
+            .eq("item_id", item_id)
+            .limit(1)
+            .execute()
+            .data
+        )
+        row["location_stock"] = stock[0] if stock else None
+    return row
 
 
 @app.get("/items/{item_id}/nutrition")
@@ -158,41 +174,6 @@ def item_nutrition(item_id: int):
     return data
 
 
-class ListEntry(BaseModel):
-    item_id: int
-    quantity: int = Field(default=1, ge=1, le=99)
-
-
-@app.get("/list")
-def get_list(user_id: str = Depends(current_user_id)):
-    return (
-        supabase.table("shopping_list")
-        .select("quantity, items(*)")
-        .eq("user_id", user_id)
-        .execute()
-        .data
-    )
-
-
-@app.post("/list")
-def add_to_list(entry: ListEntry, user_id: str = Depends(current_user_id)):
-    existing = (
-        supabase.table("shopping_list")
-        .select("quantity")
-        .eq("user_id", user_id)
-        .eq("item_id", entry.item_id)
-        .execute()
-        .data
-    )
-    qty = min((existing[0]["quantity"] if existing else 0) + entry.quantity, 99)
-    supabase.table("shopping_list").upsert(
-        {"user_id": user_id, "item_id": entry.item_id, "quantity": qty},
-        on_conflict="user_id,item_id",
-    ).execute()
-    return {"item_id": entry.item_id, "quantity": qty}
-
-
-@app.delete("/list/{item_id}")
-def remove_from_list(item_id: int, user_id: str = Depends(current_user_id)):
-    supabase.table("shopping_list").delete().eq("user_id", user_id).eq("item_id", item_id).execute()
-    return {"deleted": item_id}
+@app.get("/profile")
+def get_profile(profile: dict = Depends(current_profile)):
+    return profile

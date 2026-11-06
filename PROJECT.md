@@ -100,11 +100,10 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 | Email | |
 | Password | Store hashed only |
 
-### Other tables (implied by features)
-- Shopping lists (saved lists, QR payload)
-- Transactions / bought items (feeds dashboard)
+### Other tables
+- Orders and order items (transactions; feed the dashboard and promotions)
+- Splash notices (location-specific announcements)
 - Starred items / ping subscriptions
-- Splash notices (new items, closings, emergencies)
 - Reports (bugs, issues, suggestions)
 - Chat messages
 
@@ -127,7 +126,7 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 
 **Identity (for now)**
 - A person is identified by their **Temple ID**. No client account or email is required.
-- The database stores a trimmed Temple ID in plaintext because cashier entry and weekly checks need a stable key. Only the trusted backend/service role and authorized staff can read orders; never include Temple IDs in public responses or logs.
+- The database stores a trimmed Temple ID in plaintext because cashier entry and weekly checks need a stable key. Only the trusted backend/service role and authorized staff can read orders; never include Temple IDs in public responses or logs. The public points-preview endpoint accepts a Temple ID and returns derived eligibility/balance information, so protect it against abuse before production use.
 - The Temple ID and the **location ID** are included in the QR code and stored on each order.
 - Weekly points and limits are tracked per Temple ID per location.
 
@@ -151,9 +150,10 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - Location picker showing campus, address, hours and open-now status; directions link
 - PWA (installable, offline-capable shopping list)
 - Item browsing with tags and image carousel
-- Add to shopping list; multiple items per item allowed
-- QR code generated from shopping list
-- User can save shopping list locally
+- Add to a location-scoped shopping list; multiple items per item allowed
+- Local list storage without requiring a client account
+- QR code generated from the list with Temple ID, location ID, and a one-time nonce
+- Weekly points and per-item limit preview; checkout eligibility is rechecked atomically
 - Availability check: every time the items page opens, a read request goes to the DB
 
 ### Splash / Promotion
@@ -162,12 +162,14 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - Splash options for closings or emergencies
 
 ### Cashier tools
-- Scan QR code to load items
-- Menu to add or drop items, undo the previous action, or enter items manually
+- Scan or paste a QR code; reject codes for a different location
+- Review points/limits, add or drop items, undo, or enter items manually
+- Attest to checking the physical Temple ID; checkout is blocked while closed
 
 ### Admin tools
-- Dashboard: bought items, items left, most popular
-- Remove cashiers / control accounts
+- Location-filtered dashboard: bought items, items left, most popular
+- Control account roles and revoke cashier access
+- Publish location notices and schedule closures
 
 ### Stocker tools
 - Add items
@@ -193,16 +195,11 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 ---
 
 ## 5. Open Questions
-- Can guests build and save a list without an account?
 - Render free tier sleeps; upgrade or keep-alive?
-- Is the Temple ID verified by the cashier against a physical ID?
-- Email and account login for clients are set aside for now; revisit for pings, reports and chat
-- Should the user pick a location on first open, or detect it (nearest by coordinates)?
-- Can checkout happen outside operating hours, or is it blocked?
-- Can a cashier override a limit or the points cap?
-- What are the real location details and opening hours for initial location records?
-- What point costs should be assigned to the existing sample items?
+- Public checkout-preview abuse controls (the current flow has no client account)
+- Verified HSC location details and hours
+- What point costs and stock should be assigned to the generic sample items?
+- Email and account login for clients remain out of scope; revisit for pings, reports and chat
 - How are push pings delivered (web push, email)?
 - Live chat: real-time staff chat or a bot?
 - Recipe lookup: external API or built in?
-- Auth method for clients (email/password only, or guest access)?

@@ -4,10 +4,14 @@ Project docs: [PROJECT.md](PROJECT.md) · [DELIVERABLES.md](DELIVERABLES.md) · 
 
 ## 1. Supabase
 1. Create a project at supabase.com.
-2. SQL Editor → paste and run `supabase/schema.sql` (idempotent schema/migration, RLS and generic item seed data). Existing category slugs are migrated to tags and the old categories table is removed. No real pantry location is seeded; add verified location details and hours before launch.
-3. Project Settings → API Keys: use the `sb_secret_...` key for backend `SUPABASE_SERVICE_KEY` and the `sb_publishable_...` key for frontend `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Keep the secret key server-side.
-4. (Optional for dev) Authentication → Providers → Email → turn off "Confirm email".
-5. To enable admin item tools, sign in once with the intended admin account, then promote that profile in the SQL Editor with `update public.profiles set role = 'admin' where email = 'admin@example.com';`. Admins can look up 12- or 13-digit barcodes in Open Food Facts, review the imported details, assign tags and point cost, and save the item to the shared catalog.
+2. From the repository root, run `npx supabase login`, `npx supabase link --project-ref <project-ref>`, then `npx supabase db push --remote` to apply the ordered migrations in `supabase/migrations/` to the linked project. This is the recommended setup for both new and existing projects. The linked project in this workspace already has D2; the D3-D9 migration is prepared but has not been pushed.
+3. Alternatively, `supabase/schema.sql` is an idempotent full-schema script for the SQL Editor. Do not apply it and the CLI migrations as separate histories to the same project.
+4. Existing category slugs are migrated to tags and the obsolete categories table is removed. The migration seeds Main Campus Cherry Pantry at 1755 N 13th St, Philadelphia, PA 19122, with the supplied Fall 2026 hours and `America/New_York` timezone. HSC details and real item stock/point costs still need verification.
+5. Project Settings → API Keys: use the `sb_secret_...` key for backend `SUPABASE_SERVICE_KEY` and the `sb_publishable_...` key for frontend `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Keep the secret key server-side.
+6. (Optional for dev) Authentication → Providers → Email → turn off "Confirm email".
+7. To enable admin item tools, sign in once with the intended admin account, then promote that profile in the SQL Editor with `update public.profiles set role = 'admin' where email = 'admin@example.com';`. Admins can look up 12- or 13-digit barcodes in Open Food Facts, review the imported details, assign tags and point cost, and save the item to the shared catalog.
+
+Shopping lists are stored locally by location. Temple IDs are encoded in pickup QR codes and stored in completed orders. The public points-preview endpoint accepts a Temple ID, so add an abuse-control mechanism before production use.
 
 ## 2. USDA key
 Get a free key at https://fdc.nal.usda.gov/api-key-signup.html

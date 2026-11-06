@@ -228,12 +228,12 @@ def test_read_only_user_model_is_documented(project):
     assert "atomic" in rules
 
 
-def test_no_server_side_shopping_list_planned(deliverables):
+def test_shopping_list_is_local_and_location_scoped(deliverables):
     d5 = section(deliverables, "D5.")
     assert "Save list locally" in d5
     d2 = section(deliverables, "D2.")
-    # existing prototype table is marked as such, not planned as the end state
-    assert "[~] Shopping lists (exists, server-side)" in d2
+    assert "stored locally by location" in d2
+    assert "server-side" not in d2.lower()
 
 
 # ---------- stale text ----------
@@ -256,7 +256,7 @@ def test_open_questions_are_wellformed_and_current(project):
     lines = [l for l in qs.splitlines() if l.strip()]
     assert lines and all(l.startswith("- ") for l in lines)
     text = "\n".join(lines)
-    for topic in ("outside operating hours", "Temple ID", "real location details"):
+    for topic in ("checkout-preview abuse controls", "HSC location details", "point costs"):
         assert topic.lower() in text.lower(), f"open question about {topic!r} is missing"
 
 

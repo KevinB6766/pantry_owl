@@ -12,70 +12,71 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Add PROJECT / DELIVERABLES / CURRENT_STATE to repo
 
 ## D2. Database
-- [~] Items table, migrated from categories to tags; points costs still need to be assigned
+- [x] Items table, migrated from categories to tags; point costs for generic seed items still need configuration
 - [x] Immutable Item ID enforced (trigger)
 - [x] Locations table (immutable ID, contact/address fields, timezone, weekly points default 16, Monday week start, active)
 - [x] Location hours table (weekly schedule, multiple windows per day)
 - [x] Location closures / special hours table (message and replacement hours)
-- [ ] Seed one or two real locations with hours (waiting for verified pantry details)
+- [x] Seed Main Campus Cherry Pantry with verified hours; HSC details are still needed
 - [x] Location items table: per-location amount, availability, `limit_per_person` (nullable), points-cost override
 - [x] Item catalog fields: tags, points cost, nutrition label image, weight, ingredients, combos, added date, extra images
 - [x] Staff profiles tied to a location (cashier/stocker); admins are global
 - [x] Weekly points per location (default 16, cap = weekly points, no carryover; balance derived from this week's spend)
 - [x] Orders and order_items, keyed by Temple ID and location ID (snapshot points and quantities)
-- [~] Atomic checkout function (stock, weekly limits, points, duplicate-QR nonce rejection; live database verification pending)
+- [~] Atomic checkout function (stock, weekly limits, points, duplicate-QR nonce rejection; D3-D9 live migration verification pending)
 - [x] RLS: public reads for catalog/location data; no direct public writes
 - [x] Profiles table (immutable account ID, role, email)
-- [~] Shopping lists (exists, server-side)
-- [ ] Transactions, stars/pings, splash notices, reports, chat tables
+- [x] Shopping lists are stored locally by location; no client account is needed
+- [x] Transaction/order tables and splash notices
+- [ ] Stars/pings, reports, and chat tables
 - [~] Seed data (7 generic items; configure point costs and replace with pantry items)
 
 ## D3. Auth and Roles
-- [~] Login for staff roles (email/password works; role profiles exist)
-- [~] User / Cashier / Stocker / Admin permissions enforced in API (admin catalog and checkout checks exist; remaining routes pending)
-- [ ] Admin account control, including removing cashiers
-- [~] Staff limited to their own location (checkout checks exist; stocker routes pending)
+- [x] Staff login uses Supabase email/password profiles
+- [x] User / Cashier / Stocker / Admin permissions and location scope enforced in API
+- [x] Admin role assignment and cashier access revocation
 
 ## D4. Item Browsing
-- [~] Item list, search, tag filter, detail page
+- [x] Item list, search, tag filter, detail page
 - [x] Tag filtering
-- [ ] Image carousel
-- [~] Nutrition (USDA table exists; label image and ingredients missing)
-- [ ] Weight display
-- [ ] Availability read on every page open
-- [ ] Out-of-stock state
+- [x] Image carousel
+- [x] Nutrition table, label image, and ingredients
+- [x] Weight display
+- [x] Location-specific availability read on page open
+- [x] Out-of-stock state
 
 ## D5. Shopping List and QR
-- [~] Add to list, quantities (login required)
-- [ ] Choose location (shows address, hours, open now); list is scoped to it
-- [ ] Ask for Temple ID in the list; include Temple ID and location ID in the QR
-- [ ] Show points remaining (of the location's weekly points) and block adding past the weekly balance
-- [ ] Enforce the location's `limit_per_person` in the list UI (for example, "2 max")
-- [ ] Save list locally
-- [ ] QR code generation from list
+- [x] Add to list and edit quantities without a client login
+- [x] Choose location (address, hours, open-now status); lists are location-scoped
+- [x] Ask for Temple ID; QR contains Temple ID, location ID, list, and a one-time nonce
+- [x] Show remaining weekly points and enforce `limit_per_person`; block an ineligible QR
+- [x] Save list locally
+- [x] Generate pickup QR
 
 ## D6. Cashier Tools
-- [ ] QR scan (rejects a QR for a different location)
-- [ ] Review screen shows points total, remaining balance, and per-person limit warnings
-- [ ] Add / drop / undo / manual entry menu
-- [ ] Change item availability
+- [x] Camera scan or paste a QR; reject a QR for a different location
+- [x] Review points total, remaining balance, and per-person limit warnings
+- [x] Add / drop / undo / manual entry
+- [x] Change item availability and stock; physical Temple ID attestation required
+- [x] Checkout blocked while the location is closed; cashier overrides are not allowed
 
 ## D7. Stocker Tools
-- [ ] Add items
-- [ ] Update availability on restock
+- [x] Add catalog items to a location's inventory
+- [x] Update quantity, availability, weekly limit, and points override
 
 ## D8. Admin Dashboard
 - [x] Admin item creation from a reviewed 12- or 13-digit barcode lookup (Open Food Facts)
-- [ ] Bought items
-- [ ] Items left
-- [ ] Most popular
-- [ ] Filter dashboard by location
+- [x] Bought items
+- [x] Items left
+- [x] Most popular
+- [x] Filter dashboard by location
+- [x] Manage user roles and remove cashier access
 
 ## D9. Splash and Promotion
-- [ ] Homepage splash for new items
-- [ ] Frequently bought together splash
-- [ ] Closing / emergency notices (per location, linked to closures table)
-- [ ] Location info page: address, map/directions link, hours, closures, contact
+- [x] Homepage splash for newly stocked items
+- [x] Frequently bought together based on completed orders
+- [x] Per-location notices and closing / emergency notices
+- [x] Location info page: address, map/directions link, hours, closures, accessibility, contact
 
 ## D10. User Extras
 - [ ] Star items and availability pings

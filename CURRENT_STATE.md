@@ -1,6 +1,6 @@
 # Pantry Owl: Current State
 
-**Last updated:** 2026-11-06 (D2 schema implemented; location data pending)
+**Last updated:** 2026-11-06 (D3-D9 implementation complete locally; migration not pushed)
 **Repo:** https://github.com/KevinB6766/pantry_owl.git
 **Last commit reviewed:** `791274d` "Implement admin barcode item entry workflow and update related documentation" (2026-11-06). The D2 schema migration and Supabase project config are in this working tree.
 
@@ -15,7 +15,7 @@ Status key: Not started · In progress · Done
 ---
 
 ## Overall Snapshot
-A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browse, search, item detail with USDA nutrition, email login, and a server-side shopping list. After D1 it is branded Pantry Owl and is an installable PWA with an offline page. Admin barcode item entry is implemented. The D2 schema now defines locations, stock, weekly points, staff profiles, orders and atomic checkout; no real location is seeded yet, and cashier/stocker checkout routes are not implemented.
+A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browsing, staff roles, location-scoped local lists and QR pickup. D3-D9 code and the follow-up migration are implemented locally. Only the D2 migration has been pushed to Supabase; the D3-D9 migration is not pushed or live-verified.
 
 ## Stack (decided, from repo)
 | Layer | Choice |
@@ -27,9 +27,10 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 | Hosting | Render via `render.yaml` (services `grocery-api`, `grocery-web`; free tier sleeps when idle) |
 
 ## What exists in the repo
-- `supabase/schema.sql`: rerunnable migration from categories to item tags; catalog, profiles, locations/hours/closures, location stock, combos, orders and atomic checkout; RLS; 7 generic seed items
-- `backend/app/`: `main.py` (routes), `auth.py` (validates Supabase token), `db.py`, `nutrition.py`
-- API routes: `GET /health`, `/tags`, `/items` (filter by tag, search by name), `/items/{id}`, `/items/{id}/nutrition`, `GET/POST/DELETE /list` (auth required)
+- `supabase/schema.sql`: idempotent full schema for SQL Editor setup; includes D2 and D3-D9 objects, RLS, and 7 generic catalog items
+- `supabase/migrations/`: D2 database foundation (pushed) and D3-D9 workflows/location seed (pending push)
+- `backend/app/`: `main.py`, `auth.py`, `security.py`, `workflows.py`, `db.py`, `nutrition.py`
+- API includes catalog browsing, role checks, checkout preview and atomic cashier checkout, location/stock/dashboard/admin workflows, notices, and promotions
 - `frontend/src/`: pages for home (search and tag chips), item detail (add to list, nutrition table), my list, login/sign-up; `NavBar`; `lib/api.ts`, `lib/supabase.ts`
 - `README.md`: Supabase setup, USDA key, local run, Render deploy
 - `.env.example` files for both apps
@@ -46,34 +47,38 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - **Placeholder:** the owl icon is a generated placeholder; swap in real artwork any time (keep the same filenames and sizes)
 - **Open risk carried forward:** Render free tier sleeps when idle, which slows the first availability read (see Decisions Pending)
 
-### D2. Database: In Progress (schema foundation implemented)
-- **Exists:** immutable catalog IDs, tags (migrated from old categories), shared points cost with location override, nutrition/weight/ingredients/images/combos, location details/hours/closures, per-location stock and weekly limits, staff profiles, orders, order snapshots, atomic checkout, read-only RLS and the existing shopping-list table (read-only policy)
+### D2. Database: In Progress (schema foundation implemented and pushed)
+- **Exists:** immutable catalog IDs, tags (migrated from old categories), shared points cost with location override, nutrition/weight/ingredients/images/combos, location details/hours/closures, per-location stock and weekly limits, staff profiles, orders, order snapshots, atomic checkout, and read-only RLS
 - **Migration behavior:** `supabase/schema.sql` is idempotent for existing projects, migrates category slugs into tags, then removes the obsolete category table/column. Item point costs remain unset until configured; checkout rejects an item whose effective points cost is unset.
 - **Applied:** migration `20261106031500_d2_database_foundation.sql` was pushed to the linked production Supabase project on 2026-11-06; a subsequent remote dry run confirmed it is up to date.
-- **Still needed:** verified location records and hours, real pantry seed data and point costs; exercise checkout behavior against the live database; staff-management and cashier/stocking API routes; non-database D2 features (stars/pings, splash notices, reports, chat)
+- **Still needed:** assign point costs and stock real pantry items; exercise checkout behavior against the live database; D3-D9 migration and workflows are not live yet; D10 extras remain out of scope
 
-### D3. Auth and Roles: In Progress (profile schema implemented)
-- **Exists:** Supabase email/password sign in and sign up; backend token validation via `current_user_id`
-- **Also exists:** profiles with immutable IDs, roles and optional location assignment; checkout function checks cashier/admin location authorization
-- **Missing:** cashier/stocker permission checks on future routes and admin account control
+### D3. Auth and Roles: Implemented locally; pending live verification
+- Staff role and location authorization; admin role management and cashier demotion
 
-### D4. Item Browsing: In Progress (partial groundwork)
-- **Exists:** item grid, search, tag filter, detail page, USDA nutrition table
-- **Missing:** image carousel, nutrition label image display, ingredients/weight display, out-of-stock state, location-specific availability
+### D4. Item Browsing: Implemented locally
+- Location-scoped item availability, image carousel, nutrition labels, ingredients, and weight
 
-### D5. Shopping List and QR: Not started (partial groundwork)
-- **Exists:** server-side list (add, remove, quantity capped at 99), requires login
-- **Missing:** local save and guest use, item limits, qty editing, QR generation
+### D5. Shopping List and QR: Implemented locally
+- Guest local lists, Temple ID preview, weekly points/`limit_per_person` checks, and QR generation
 
-### D6. Cashier Tools: Not started
-### D7. Stocker Tools: Not started
-### D8. Admin Dashboard: In Progress (barcode item entry implemented)
-- **Exists:** Admin-only barcode lookup and catalog entry; global admin role
-- **Missing:** bought-item, stock, and popularity dashboards; location filtering; general account and permission management
-### D9. Splash and Promotion: Not started
+### D6. Cashier Tools: Implemented locally; pending live verification
+- Camera/paste QR checkout, physical Temple ID attestation, manual line edits/undo, availability updates, and closed-hours enforcement
+
+### D7. Stocker Tools: Implemented locally; pending live verification
+- Add catalog items to location inventory; update stock, availability, weekly limits, and points overrides
+
+### D8. Admin Dashboard: Implemented locally; pending live verification
+- Location dashboard, account role management, cashier demotion, catalog tools, notices, and closures
+
+### D9. Splash and Promotion: Implemented locally
+- Location pages, newly stocked item splash, and order-derived frequently bought together
+- **Main Campus seed:** Main Campus Cherry Pantry, 1755 N 13th St, Philadelphia, PA 19122; wheelchair accessible; 16 weekly points; Monday-Friday hours supplied for Fall 2026; timezone `America/New_York`
+- **Not seeded:** HSC location (complete verified address/hours not provided); catalog inventory and generic item point costs remain unconfigured
+- **Migration:** `20261106033000_d3_d9_workflows.sql` is local and pending user push; no D3-D9 production verification has occurred
 ### D10. User Extras: Not started
-### D11. Quality and Launch: Not started
-- Deploy config exists; no tests in repo
+### D11. Quality and Launch: In Progress
+- Deploy config and documentation tests exist; workflow integration/live database tests, accessibility/mobile review, and production deployment remain
 
 ## Decisions Made
 - Identity for now is the normalized Temple ID only (no client account or email); it is stored as plaintext on orders, included in the QR, and restricted to trusted backend/staff access
@@ -86,20 +91,22 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - Admins are global; cashiers and stockers require one assigned location
 - Weekly balance is derived from this week's orders at that location, so no reset job is needed
 - QR carries Temple ID, location ID and the list
+- Cashier must attest to checking the physical Temple ID; checkout is blocked outside location hours; no cashier overrides
+- Main Campus uses `America/New_York` (not fixed `EST`) to handle daylight-saving changes
+- The D3-D9 migration is prepared but will not be pushed until the user applies/reviews it
 - Stack: Next.js + FastAPI + Supabase on Render
 - Service worker never caches API calls (availability must be fresh)
 - Four roles: user, cashier, stocker, admin
 - Item ID and Account ID are immutable
-- Nutrition currently comes from USDA lookup (spec also wants an uploaded label image and ingredient text)
+- Nutrition data comes from USDA lookup; optional nutrition label images, ingredients, and package weight are supported in the catalog
 
 ## Decisions Pending
-- Whether the cashier verifies the Temple ID against a physical ID
-- Client email/accounts set aside; revisit for pings, reports and chat
-- Whether checkout is blocked outside operating hours
-- How a user chooses a location
-- Whether cashiers can override limits or the points cap
-- Verified details/hours for the initial location records
-- Point costs for the existing sample items
+- Point costs and real inventory for the generic sample items
+- Verified HSC location details and hours
+- Public checkout preview exposes derived points/limit eligibility to anyone who knows a Temple ID; decide whether to add client authentication or an abuse-control mechanism before production use
+- Client accounts remain out of scope for D5; revisit for pings, reports and chat
+- Push ping method (web push vs email), live chat approach, and recipe lookup source
+- Upgrade Render plan or add a keep-alive so the API doesn't sleep; rename Render services when redeploying
 - Push ping method (web push vs email)
 - Live chat approach
 - Recipe lookup source
@@ -110,7 +117,7 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 None.
 
 ## Next Up
-Add verified location data and point costs, then validate the D2 schema and checkout on Supabase/Postgres before building the cashier/stocker routes.
+User applies the D3-D9 migration, then verify the database workflows and assign real pantry inventory/point costs before launch.
 
 ## Session Log
 - 2026-11-05: Created PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md from feature checklist.
@@ -121,3 +128,4 @@ Add verified location data and point costs, then validate the D2 schema and chec
 - 2026-11-05: Moved rules, stock and limits to a per-location model; added location details, weekly hours and closures.
 - 2026-11-06: Started an admin-only Open Food Facts barcode item-entry workflow; full role management and dashboard remain out of scope.
 - 2026-11-06: Implemented the D2 schema migration (tags, locations, stock, roles, orders, atomic checkout and RLS); moved browse/admin catalog surfaces from categories to tags.
+- 2026-11-06: Implemented D3-D9 workflows, UI, and Main Campus location seed. Frontend build and Python compilation pass; migration is pending user push and live database verification.
