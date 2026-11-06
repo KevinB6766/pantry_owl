@@ -65,6 +65,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [ ] Update availability on restock
 
 ## D8. Admin Dashboard
+- [~] Admin item creation from a reviewed 12- or 13-digit barcode lookup (Open Food Facts)
 - [ ] Bought items
 - [ ] Items left
 - [ ] Most popular

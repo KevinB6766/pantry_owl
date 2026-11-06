@@ -1,6 +1,6 @@
 # Pantry Owl: Current State
 
-**Last updated:** 2026-11-05 (after D1)
+**Last updated:** 2026-11-06 (barcode admin workflow in progress)
 **Repo:** https://github.com/KevinB6766/pantry_owl.git
 **Last commit reviewed:** `32a15e3` "Move Pantry Owl project to repository root" (2026-11-04). D1 changes are uncommitted until you push them.
 
@@ -15,7 +15,7 @@ Status key: Not started · In progress · Done
 ---
 
 ## Overall Snapshot
-A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browse, search, item detail with USDA nutrition, email login, and a server-side shopping list. After D1 it is branded Pantry Owl and is an installable PWA with an offline page. It has no roles, no stock tracking, no QR, no dashboard yet.
+A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browse, search, item detail with USDA nutrition, email login, and a server-side shopping list. After D1 it is branded Pantry Owl and is an installable PWA with an offline page. An admin-only barcode item-entry workflow is in progress; other roles, stock tracking, QR, and the dashboard are not implemented.
 
 ## Stack (decided, from repo)
 | Layer | Choice |
@@ -55,6 +55,10 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 ### D3. Auth and Roles: Not started (partial groundwork)
 - **Exists:** Supabase email/password sign in and sign up; backend token validation via `current_user_id`
 - **Missing:** profiles with roles (user/cashier/stocker/admin), permission checks on routes, admin account control, immutable Account ID
+
+### D8. Admin Dashboard: In Progress (barcode item entry)
+- **In progress:** Add an admin-only workflow to look up 12- or 13-digit product barcodes through Open Food Facts and create catalog items after review.
+- **Still missing:** bought-item, stock, and popularity dashboards; location filtering; general account and permission management.
 
 ### D4. Item Browsing: Not started (partial groundwork)
 - **Exists:** item grid, search, category filter, detail page, USDA nutrition table
@@ -108,7 +112,7 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 None.
 
 ## Next Up
-D2 Database. Decide first: keep `categories` or switch to tags, and points vs price.
+Finish the barcode-based admin item-entry workflow, then resume D2 Database. Decide first: keep `categories` or switch to tags, and points vs price.
 
 ## Session Log
 - 2026-11-05: Created PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md from feature checklist.
@@ -117,3 +121,4 @@ D2 Database. Decide first: keep `categories` or switch to tags, and points vs pr
 - 2026-11-05: Recorded points rule (16/week, no carryover), per-person limits, and read-only/QR architecture in all three files.
 - 2026-11-05: Identity set to Temple ID only; email and accounts deferred.
 - 2026-11-05: Moved rules, stock and limits to a per-location model; added location details, weekly hours and closures.
+- 2026-11-06: Started an admin-only Open Food Facts barcode item-entry workflow; full role management and dashboard remain out of scope.

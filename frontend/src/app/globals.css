@@ -8,6 +8,9 @@ a { color: inherit; }
 button, .btn { cursor: pointer; border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff; padding: .5rem .9rem; border-radius: 6px; font-size: .95rem; }
 .navlinks button { background: none; color: inherit; }
 input { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+select, textarea { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+textarea { min-height: 5rem; resize: vertical; }
+button:disabled { cursor: wait; opacity: .65; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
 .chip { padding: .3rem .8rem; border: 1px solid #ccc; border-radius: 999px; background: #fff; color: inherit; }
 .chip.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
@@ -21,3 +24,7 @@ td:last-child { text-align: right; }
 .row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 0; border-bottom: 1px solid #eee; }
 .stack { display: flex; flex-direction: column; gap: .75rem; max-width: 320px; }
 .error { color: #b00020; }
+.admin-tools { max-width: 560px; }
+.admin-tools section, .admin-item-form { padding: 1rem; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; }
+.admin-tools h2 { margin: 0 0 .75rem; font-size: 1.15rem; }
+.admin-tools p { margin: .5rem 0 1rem; }

@@ -1,6 +1,9 @@
 import os
+import re
 from typing import Optional
 
+import httpx
+from postgrest.exceptions import APIError
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +28,95 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+def require_admin(user_id: str = Depends(current_user_id)) -> str:
+    profile = (
+        supabase.table("profiles")
+        .select("role")
+        .eq("id", user_id)
+        .execute()
+        .data
+    )
+    if not profile or profile[0]["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user_id
+
+
+def validate_barcode(barcode: str) -> str:
+    if not re.fullmatch(r"[0-9]{12,13}", barcode):
+        raise HTTPException(status_code=400, detail="Barcode must contain 12 or 13 digits")
+    return barcode
+
+
+@app.get("/admin/barcode/{barcode}")
+def lookup_barcode(barcode: str, _: str = Depends(require_admin)):
+    validate_barcode(barcode)
+    try:
+        response = httpx.get(
+            f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json",
+            params={"fields": "code,product_name,product_name_en,brands,ingredients_text,quantity,image_front_url"},
+            headers={"User-Agent": "PantryOwl/1.0"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        result = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Open Food Facts lookup timed out") from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="Open Food Facts lookup failed") from exc
+
+    product = result.get("product") if isinstance(result, dict) else None
+    if not isinstance(product, dict) or result.get("status") != 1:
+        raise HTTPException(status_code=404, detail="No product was found for this barcode")
+
+    name = product.get("product_name_en") or product.get("product_name")
+    if not isinstance(name, str) or not name.strip():
+        raise HTTPException(status_code=422, detail="The product has no name in Open Food Facts")
+
+    brands = product.get("brands")
+    return {
+        "barcode": barcode,
+        "name": name.strip(),
+        "description": f"Brand: {brands.strip()}" if isinstance(brands, str) and brands.strip() else None,
+        "ingredients": product.get("ingredients_text") or None,
+        "weight": product.get("quantity") or None,
+        "image_url": product.get("image_front_url") or None,
+        "nutrition_query": name.strip(),
+    }
+
+
+class AdminItemCreate(BaseModel):
+    barcode: str = Field(pattern=r"^[0-9]{12,13}$")
+    name: str = Field(min_length=1, max_length=200)
+    category_id: int = Field(gt=0)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    ingredients: Optional[str] = Field(default=None, max_length=10000)
+    weight: Optional[str] = Field(default=None, max_length=100)
+    image_url: Optional[str] = Field(default=None, max_length=2000)
+    nutrition_query: Optional[str] = Field(default=None, max_length=200)
+    price: Optional[float] = Field(default=None, ge=0)
+
+
+@app.post("/admin/items", status_code=201)
+def create_admin_item(entry: AdminItemCreate, _: str = Depends(require_admin)):
+    duplicate = (
+        supabase.table("items")
+        .select("id")
+        .eq("barcode", entry.barcode)
+        .execute()
+        .data
+    )
+    if duplicate:
+        raise HTTPException(status_code=409, detail="An item with this barcode already exists")
+
+    try:
+        result = supabase.table("items").insert(entry.model_dump()).execute()
+    except APIError as exc:
+        if getattr(exc, "code", None) == "23505":
+            raise HTTPException(status_code=409, detail="An item with this barcode already exists") from exc
+        raise HTTPException(status_code=502, detail="Could not save the item") from exc
+    return result.data[0]
 
 
 @app.get("/categories")

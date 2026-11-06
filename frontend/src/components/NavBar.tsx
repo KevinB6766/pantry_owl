@@ -20,7 +20,10 @@ export default function NavBar() {
       <div className="navlinks">
         <Link href="/list">My list</Link>
         {session ? (
-          <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+          <>
+            <Link href="/admin">Admin tools</Link>
+            <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+          </>
         ) : (
           <Link href="/login">Sign in</Link>
         )}
