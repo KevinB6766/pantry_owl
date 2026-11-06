@@ -14,7 +14,17 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 ## D2. Database
 - [~] Items table (exists; missing most spec fields)
 - [ ] Immutable Item ID enforced (trigger)
-- [ ] Item fields: tags, points cost, nutrition label image, weight, ingredients, amount, limits, combos, out-of-stock, added date, extra images
+- [ ] Locations table (immutable Location ID, name, campus, building/room, street address, lat/long, directions and accessibility notes, phone/email, photo, timezone, weekly points default 16, week start day, active)
+- [ ] Location hours table (weekly schedule, multiple windows per day)
+- [ ] Location closures / special hours table (holidays, emergencies, with user-facing message)
+- [ ] Seed one or two sample locations with hours
+- [ ] Location items table: per-location amount, availability override, `limit_per_person` (nullable)
+- [ ] Item catalog fields (shared): tags, points cost, nutrition label image, weight, ingredients, combos, added date, extra images
+- [ ] Staff profiles tied to a location (cashier, stocker); admin scope decided
+- [ ] Weekly points per location (default 16, cap = weekly points, no carryover; balance derived from this week's spend at that location)
+- [ ] Orders and order_items, keyed by Temple ID and location ID (store points and quantity per line; used for weekly points, limits and dashboard)
+- [ ] Atomic checkout function (stock, limits, points, duplicate-QR rejection)
+- [ ] RLS: read-only for users, no public writes
 - [ ] Profiles table (immutable Acct ID, permissions, email)
 - [~] Shopping lists (exists, server-side)
 - [ ] Transactions, stars/pings, splash notices, reports, chat tables
@@ -24,6 +34,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [~] Login for all roles (email/password works; no roles)
 - [ ] User / Cashier / Stocker / Admin permissions enforced in API
 - [ ] Admin account control, including removing cashiers
+- [ ] Staff limited to their own location
 
 ## D4. Item Browsing
 - [~] Item list, search, category filter, detail page
@@ -36,12 +47,16 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 
 ## D5. Shopping List and QR
 - [~] Add to list, quantities (login required)
-- [ ] Enforce item limits
+- [ ] Choose location (shows address, hours, open now); list is scoped to it
+- [ ] Ask for Temple ID in the list; include Temple ID and location ID in the QR
+- [ ] Show points remaining (of the location's weekly points) and block adding past the weekly balance
+- [ ] Enforce the location's `limit_per_person` in the list UI (for example, "2 max")
 - [ ] Save list locally
 - [ ] QR code generation from list
 
 ## D6. Cashier Tools
-- [ ] QR scan
+- [ ] QR scan (rejects a QR for a different location)
+- [ ] Review screen shows points total, remaining balance, and per-person limit warnings
 - [ ] Add / drop / undo / manual entry menu
 - [ ] Change item availability
 
@@ -53,11 +68,13 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [ ] Bought items
 - [ ] Items left
 - [ ] Most popular
+- [ ] Filter dashboard by location
 
 ## D9. Splash and Promotion
 - [ ] Homepage splash for new items
 - [ ] Frequently bought together splash
-- [ ] Closing / emergency notices
+- [ ] Closing / emergency notices (per location, linked to closures table)
+- [ ] Location info page: address, map/directions link, hours, closures, contact
 
 ## D10. User Extras
 - [ ] Star items and availability pings

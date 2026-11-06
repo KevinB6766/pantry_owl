@@ -7,7 +7,8 @@
 ## How to use this file
 1. **Before starting a deliverable:** read its section here and its checklist in [DELIVERABLES.md](DELIVERABLES.md). Confirm repo state against it.
 2. **While working:** set the deliverable status to In Progress and note blockers.
-3. **After finishing:** update the deliverable's section (status, what exists, gaps, commit), tick items in DELIVERABLES.md, adjust Decisions, and add a Session Log line.
+3. **Tests:** run `pytest tests/` after any change to these docs or the schema. `tests/test_patch2_docs.py` checks that the three docs agree with each other and with the decided rules.
+4. **After finishing:** update the deliverable's section (status, what exists, gaps, commit), tick items in DELIVERABLES.md, adjust Decisions, and add a Session Log line.
 
 Status key: Not started · In progress · Done
 
@@ -47,6 +48,7 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 
 ### D2. Database: Not started (partial groundwork)
 - **Exists:** `items` (id, name, description, price, image_url, category_id, nutrition_query), `categories`, `shopping_list`
+- **Rules to add (decided):** `locations` table (address, contact, timezone, weekly points, week start), `location_hours`, `location_closures`, per-location stock/availability/`limit_per_person`, weekly points derived from orders, atomic checkout, read-only RLS
 - **Missing from spec:** immutable Item ID enforcement (id is `serial` but not locked), tags, points cost, nutrition label image, weight, ingredients text, amount, limits, combos, out-of-stock flag, added date, extra image URLs for carousel; profiles/roles table; transactions; stars/pings; splash notices; reports; chat
 - **Note:** `categories` is not in the spec; decide whether it stays alongside tags
 
@@ -71,6 +73,13 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - Deploy config exists; no tests in repo
 
 ## Decisions Made
+- Identity for now is the Temple ID only (no client account or email); it goes in the QR and on each order
+- Users are read-only on the database; shopping list is stored locally; checkout is a QR code the cashier scans and verifies
+- Rules are assigned to a **location** (multiple pantries on different campuses): weekly points (default 16, cap, no carryover), per-item limits, stock and staff are all per location
+- Each location also stores address, coordinates, contact info, notes, timezone, a weekly hours schedule and one-off closures; open-now is computed, not stored
+- Item catalog is shared; stock, availability and `limit_per_person` live on a per-location item row
+- Weekly balance is derived from this week's orders at that location, so no reset job is needed
+- QR carries Temple ID, location ID and the list
 - Stack: Next.js + FastAPI + Supabase on Render
 - Service worker never caches API calls (availability must be fresh)
 - Four roles: user, cashier, stocker, admin
@@ -79,11 +88,19 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 
 ## Decisions Pending
 - Keep or replace `categories` (spec uses tags)
-- Points vs price model
+- Whether the Temple ID is verified by the cashier and whether it is stored as-is or hashed
+- Client email/accounts set aside; revisit for pings, reports and chat
+- Whether limits reset weekly or apply per visit
+- Whether checkout is blocked outside operating hours
+- Whether a person's 16 points are shared across pantries or per pantry
+- Whether points costs can differ by location
+- Admin scope: per location or super admin
+- How a user chooses a location
+- Default week start day and timezone (stored per location)
+- Whether cashiers can override limits or the points cap
 - Push ping method (web push vs email)
 - Live chat approach
 - Recipe lookup source
-- Whether guests can build and save a list without an account
 - Upgrade Render plan or add a keep-alive so the API doesn't sleep
 - Rename Render services (grocery-* to pantry-owl-*)
 
@@ -97,3 +114,6 @@ D2 Database. Decide first: keep `categories` or switch to tags, and points vs pr
 - 2026-11-05: Created PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md from feature checklist.
 - 2026-11-05: Reviewed repo (commit `32a15e3`), found existing stack and prototype, rewrote all three files to match.
 - 2026-11-05: D1 completed. Rebranded, verified build, added PWA shell and docs. Render rename deferred.
+- 2026-11-05: Recorded points rule (16/week, no carryover), per-person limits, and read-only/QR architecture in all three files.
+- 2026-11-05: Identity set to Temple ID only; email and accounts deferred.
+- 2026-11-05: Moved rules, stock and limits to a per-location model; added location details, weekly hours and closures.

@@ -31,15 +31,65 @@ All roles can log in.
 | Price | |
 | Image URL | Supports carousel (multiple images) |
 | Tags | vegan, vegetarian, halal, kosher, canned, fruit, veggie, grain, pasta, etc. |
-| Points cost | |
+| Points cost | Points an item costs per unit |
 | Nutrition label image | |
 | Weight | |
 | Ingredients text | |
-| Amount | Quantity in stock |
-| Limits | Max per person/visit |
+| Amount | Moved to per-location stock (see Locations) |
 | Combos | Related/frequently bought together items |
-| Out of stock | Flag |
+| Out of stock | Moved to per-location availability (see Locations) |
 | Added date | Drives "newly added" homepage splash |
+
+### Locations
+Each pantry (campus) is a location with its own details, rules, stock and staff.
+
+| Field | Notes |
+|---|---|
+| Location ID | Unchangeable |
+| Name | Display name, e.g. "Main Campus Pantry" |
+| Campus | Campus name |
+| Building / room | Where on campus |
+| Street address, city, state, ZIP | For maps and directions |
+| Latitude / longitude | Map pin and nearest-location lookup |
+| Directions note | How to find the entrance, landmarks |
+| Accessibility note | Entrances, elevators, parking |
+| Phone / contact email | Public contact |
+| Photo | Storage image of the entrance or space |
+| Timezone | Decides when a week starts and whether the pantry is open now |
+| Weekly points | Default 16. This is also the cap; no carryover |
+| Week start day | Day the weekly allotment resets |
+| Active | Hide a location without deleting its history |
+
+### Location hours
+Regular weekly schedule. A day can have several rows (for example, a lunch window and an evening window) or none (closed).
+
+| Field | Notes |
+|---|---|
+| Location ID | |
+| Day of week | 0 to 6 |
+| Opens / closes | Local time at the location's timezone |
+
+### Location closures and special hours
+One-off changes: holidays, breaks, weather, emergencies.
+
+| Field | Notes |
+|---|---|
+| Location ID | |
+| Start / end date-time | |
+| Closed or special hours | Closed all period, or replacement open/close times |
+| Reason / message | Shown to users; can feed the homepage closing/emergency splash |
+
+"Open now" and "next opening" are computed from the weekly hours, then overridden by any closure, using the location's timezone.
+
+### Location items (per-location stock and rules)
+| Field | Notes |
+|---|---|
+| Location ID + Item ID | Together identify the row |
+| Amount | Quantity in stock at this location |
+| Available | Manual override (out of stock) |
+| Limit per person | Nullable integer. `null` = no limit. Example: toiletries = 2 at this pantry |
+
+The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, availability and limits are per location.
 
 ### Accounts
 | Field | Notes |
@@ -57,11 +107,43 @@ All roles can log in.
 - Reports (bugs, issues, suggestions)
 - Chat messages
 
+## 2a. Business Rules and Architecture Decisions
+
+**Rules belong to a location.** Each pantry has its own weekly points, week start, per-item limits and stock. The same item can have a different limit at each campus.
+
+**Points (per location)**
+- Default is **16 points per person per week**, set per location.
+- Balance can never exceed the location's weekly points.
+- Unspent points **do not carry over**; every week starts full.
+- Checkout cannot spend more points than remain this week.
+- Balance is derived: weekly points minus points spent in orders at this location this week.
+
+**Per-person item limits (per location)**
+- Stored on the location item as `limit_per_person` (for example, toiletries = 2).
+- Shown and enforced in the user's shopping list and again on the cashier screen.
+
+**Identity (for now)**
+- A person is identified by their **Temple ID**. No client account or email is required.
+- The Temple ID and the **location ID** are included in the QR code and stored on each order.
+- Weekly points and limits are tracked per Temple ID per location.
+
+**Staff scope**
+- Cashiers and stockers belong to one location and can only act on that location's stock and orders.
+
+**Access model**
+- Users have **read-only** access to the database (public key plus RLS `select` only).
+- The shopping list is saved **locally on the device**, scoped to the chosen location.
+- At checkout the user shows a **QR code containing the list**.
+- The **cashier scans it, verifies the physical items**, edits if needed, and confirms.
+- All writes (checkout, stock, items, accounts) go through the backend by staff roles.
+- Checkout runs as one atomic database function that checks stock, limits and points for that location, records the order, and rejects a QR that was already redeemed.
+
 ---
 
 ## 3. Features
 
 ### Core
+- Location picker showing campus, address, hours and open-now status; directions link
 - PWA (installable, offline-capable shopping list)
 - Item browsing with tags and image carousel
 - Add to shopping list; multiple items per item allowed
@@ -109,7 +191,16 @@ All roles can log in.
 - Keep `categories` or replace with tags?
 - Can guests build and save a list without an account?
 - Render free tier sleeps; upgrade or keep-alive?
-- Are "points" a client balance spent at checkout, and does price still matter?
+- Is the Temple ID entered by the client or verified by the cashier (for example, checked against a physical ID)? Should Temple IDs be stored as-is or hashed?
+- Email and account login for clients are set aside for now; revisit for pings, reports and chat
+- Do per-person limits reset weekly, or apply per visit?
+- Is a person's weekly 16 points shared across all pantries, or does each pantry give its own 16?
+- Can a person shop at more than one location in the same week, and do limits then apply per location or overall?
+- Are points costs the same at every location, or can a location override them?
+- Are admins per location or across all locations (super admin)?
+- Should the user pick a location on first open, or detect it (nearest by coordinates)?
+- Can checkout happen outside operating hours, or is it blocked?
+- Can a cashier override a limit or the points cap?
 - How are push pings delivered (web push, email)?
 - Live chat: real-time staff chat or a bot?
 - Recipe lookup: external API or built in?
