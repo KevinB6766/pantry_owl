@@ -44,6 +44,8 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Weight display
 - [x] Location-specific availability read on page open
 - [x] Out-of-stock state
+- [x] Responsive catalog cards, stock labels, quick-add, and loading/empty/error states
+- [x] UPC-based catalog records and USDA Branded Foods lookup with name-search fallback
 
 ## D5. Shopping List and QR
 - [x] Add to list and edit quantities without a client login
@@ -52,6 +54,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Show remaining weekly points and enforce `limit_per_person`; block an ineligible QR
 - [x] Save list locally
 - [x] Generate pickup QR
+- [x] Shopping-list icon in the shared navigation
 
 ## D6. Cashier Tools
 - [x] Camera scan or paste a QR; reject a QR for a different location
@@ -77,6 +80,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Frequently bought together based on completed orders
 - [x] Per-location notices and closing / emergency notices
 - [x] Location info page: address, map/directions link, hours, closures, accessibility, contact
+- [x] Responsive storefront hero, catalog search/filter controls, and icon-led navigation
 
 ## D10. User Extras
 - [ ] Star items and availability pings
@@ -85,7 +89,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [ ] Bug / issue / suggestion box
 
 ## D11. Quality and Launch
-- [ ] Testing (roles, QR flow, offline)
-- [ ] Accessibility and mobile pass
+- [~] Unit tests (frontend API/list utilities and backend API routes); live role, QR, and offline integration testing remains
+- [~] Responsive layout and keyboard focus styles implemented; full accessibility/mobile audit remains
 - [ ] Production deployment (API wake-up issue resolved)
 - [ ] User and admin documentation

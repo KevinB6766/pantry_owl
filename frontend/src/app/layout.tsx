@@ -23,6 +23,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <NavBar />
         <main>{children}</main>
+        <footer className="site-footer">
+          <p>Pantry Owl · Food, care, and community.</p>
+          <div className="site-footer-links">
+            <a href="/">Browse pantry</a>
+            <a href="/locations">Find a location</a>
+            <a href="/list">Your pickup list</a>
+          </div>
+        </footer>
         <ServiceWorkerRegister />
       </body>
     </html>

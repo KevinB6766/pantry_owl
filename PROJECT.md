@@ -3,7 +3,7 @@
 A Progressive Web App (PWA) for a food pantry. Clients browse items, build a shopping list, and generate a QR code. Cashiers scan the code at pickup. Stockers keep availability current. Admins manage accounts and see data.
 
 - **Repo:** https://github.com/KevinB6766/pantry_owl.git
-- **Stack:** Next.js + React + TypeScript (frontend), FastAPI (backend), Supabase (Postgres + Auth), USDA FoodData Central (nutrition), Render (hosting). See [CURRENT_STATE.md](CURRENT_STATE.md) for what is built.
+- **Stack:** Next.js + React + TypeScript (frontend), FastAPI (backend), Supabase (Postgres + Auth), Open Food Facts (product metadata), USDA FoodData Central (nutrition), Render (hosting). See [CURRENT_STATE.md](CURRENT_STATE.md) for what is built.
 - **Related files:** [DELIVERABLES.md](DELIVERABLES.md) · [CURRENT_STATE.md](CURRENT_STATE.md)
 
 ---
@@ -12,7 +12,7 @@ A Progressive Web App (PWA) for a food pantry. Clients browse items, build a sho
 
 | Role | Can do |
 |---|---|
-| **User** | Browse items, build/save shopping list, generate QR code, star items and get availability pings, recipe lookup, live chat, submit bugs/suggestions |
+| **User** | Browse items, build/save a shopping list, and generate a pickup QR code. Stars/pings, recipe lookup, live chat, and issue reports are planned extras. |
 | **Cashier** | Scan QR code, add/drop items, undo previous action, manually enter items, change item availability |
 | **Stocker** | Add items, update availability when restocked |
 | **Admin** | Control accounts (create, change permissions, remove cashiers), view dashboard, manage splash/emergency notices |
@@ -27,6 +27,7 @@ All roles can log in.
 | Field | Notes |
 |---|---|
 | Item ID | Unchangeable |
+| Barcode | UPC used to look up and identify packaged products |
 | Name | |
 | Price | |
 | Image URL | Supports carousel (multiple images) |
@@ -149,12 +150,15 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 ### Core
 - Location picker showing campus, address, hours and open-now status; directions link
 - PWA (installable, offline-capable shopping list)
-- Item browsing with tags and image carousel
+- Responsive item browsing with search, tag filters, item images, and a detail-page image carousel
+- Product details include barcode, ingredients, package size, and nutrition when data is available
 - Add to a location-scoped shopping list; multiple items per item allowed
+- Quick-add stocked items from the catalog; show local availability and points
 - Local list storage without requiring a client account
 - QR code generated from the list with Temple ID, location ID, and a one-time nonce
 - Weekly points and per-item limit preview; checkout eligibility is rechecked atomically
 - Availability check: every time the items page opens, a read request goes to the DB
+- Icon-led navigation for locations, shopping list, and sign-in; staff links are role-gated
 
 ### Splash / Promotion
 - Homepage splash for newly added items
@@ -181,6 +185,8 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - Live chat for questions
 - Bug / issue / suggestion box
 
+These user extras are planned and are not implemented in the current app.
+
 ---
 
 ## 4. Database Interactions
@@ -198,8 +204,14 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - Render free tier sleeps; upgrade or keep-alive?
 - Public checkout-preview abuse controls (the current flow has no client account)
 - Verified HSC location details and hours
-- What point costs and stock should be assigned to the generic sample items?
+- What point costs and stock should be assigned to the eight UPC-identified catalog items?
 - Email and account login for clients remain out of scope; revisit for pings, reports and chat
 - How are push pings delivered (web push, email)?
 - Live chat: real-time staff chat or a bot?
 - Recipe lookup: external API or built in?
+
+## 6. Frontend Quality
+- The catalog uses responsive product cards, search and category chips, availability labels, quick-add actions, new-item highlights, and empty/loading/error states.
+- Shopping-list, location, staff, and admin workflows retain their pantry-specific behavior; the storefront is not a general checkout/e-commerce flow.
+- Run `npm test` from `frontend/` for the frontend unit tests. Run `npm run build` there to verify the production build.
+- Detailed implementation and verification status is tracked in [CURRENT_STATE.md](CURRENT_STATE.md) and [DELIVERABLES.md](DELIVERABLES.md).

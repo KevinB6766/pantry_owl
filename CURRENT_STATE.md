@@ -1,6 +1,6 @@
 # Pantry Owl: Current State
 
-**Last updated:** 2026-11-06 (UPC catalog and USDA lookup updates; migrations pending push)
+**Last updated:** 2026-11-06 (responsive storefront and icon navigation; migrations pending push)
 **Repo:** https://github.com/KevinB6766/pantry_owl.git
 **Last commit reviewed:** `791274d` "Implement admin barcode item entry workflow and update related documentation" (2026-11-06). The D2 schema migration and Supabase project config are in this working tree.
 
@@ -15,7 +15,7 @@ Status key: Not started · In progress · Done
 ---
 
 ## Overall Snapshot
-A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browsing, staff roles, location-scoped local lists and QR pickup. D3-D9 code and the follow-up migrations are implemented locally. Only the D2 migration has been pushed to Supabase; workflow, permission, and UPC catalog migrations remain pending and are not live-verified.
+A working prototype: a responsive Next.js frontend and FastAPI backend on Supabase, with item browsing, staff roles, location-scoped local lists and QR pickup. D3-D9 code and the follow-up migrations are implemented locally. Only the D2 migration has been pushed to Supabase; workflow, permission, and UPC catalog migrations remain pending and are not live-verified.
 
 ## Stack (decided, from repo)
 | Layer | Choice |
@@ -23,7 +23,7 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 | Frontend | Next.js (`^16.4.5`, builds fine with React 18) + React 18 + TypeScript, App Router |
 | Backend | FastAPI 0.115 + Uvicorn, Supabase Python client |
 | Database / Auth | Supabase (Postgres, Supabase Auth email/password, RLS on) |
-| External data | USDA FoodData Central (generic nutrition per 100 g, branded UPCs per serving, in-memory cache) |
+| External data | Open Food Facts barcode metadata; USDA FoodData Central (generic nutrition per 100 g, exact branded UPC matches per serving, in-memory cache) |
 | Hosting | Render via `render.yaml` (services `grocery-api`, `grocery-web`; free tier sleeps when idle) |
 
 ## What exists in the repo
@@ -31,7 +31,9 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - `supabase/migrations/`: D2 foundation is pushed; workflow, service-role grant, and UPC catalog migrations are pending push
 - `backend/app/`: `main.py`, `auth.py`, `security.py`, `workflows.py`, `db.py`, `nutrition.py`
 - API includes catalog browsing, role checks, checkout preview and atomic cashier checkout, location/stock/dashboard/admin workflows, notices, and promotions
-- `frontend/src/`: pages for home (search and tag chips), item detail (add to list, nutrition table), my list, login/sign-up; `NavBar`; `lib/api.ts`, `lib/supabase.ts`
+- `frontend/src/`: responsive catalog storefront, item detail (nutrition, ingredients, and add-to-list), locations, saved list/QR, staff and admin tools, and sign-in; icon navigation for locations, shopping cart, and account
+- Frontend tests: Vitest coverage for API client and local list utilities (`npm test` from `frontend/`)
+- Backend/repository tests: API-route smoke tests, nutrition lookup unit tests, and docs consistency checks (`pytest` from repository root)
 - `README.md`: Supabase setup, USDA key, local run, Render deploy
 - `.env.example` files for both apps
 
@@ -57,7 +59,10 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - Staff role and location authorization; admin role management and cashier demotion
 
 ### D4. Item Browsing: Implemented locally
+- Responsive storefront with search, tags, product cards, stock labels, quick-add, and loading/empty/error states
 - Location-scoped item availability, image carousel, nutrition labels, ingredients, and weight
+- Eight UPC-identified product seeds replace the seven generic examples; the two unmatched supplied barcodes were omitted
+- USDA branded data is looked up by exact UPC where available; ordinary food queries continue to use Foundation/SR Legacy data per 100 g
 
 ### D5. Shopping List and QR: Implemented locally
 - Guest local lists, Temple ID preview, weekly points/`limit_per_person` checks, and QR generation
@@ -73,12 +78,16 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 
 ### D9. Splash and Promotion: Implemented locally
 - Location pages, newly stocked item splash, and order-derived frequently bought together
+- Responsive storefront hero and icon-led navigation; locations are in the menu, shopping list and sign-in are icon controls
 - **Main Campus seed:** Main Campus Cherry Pantry, 1755 N 13th St, Philadelphia, PA 19122; wheelchair accessible; 16 weekly points; Monday-Friday hours supplied for Fall 2026; timezone `America/New_York`
-- **Not seeded:** HSC location (complete verified address/hours not provided); catalog inventory and generic item point costs remain unconfigured
-- **Migration:** `20261106033000_d3_d9_workflows.sql` is local and pending user push; no D3-D9 production verification has occurred
+- **Not seeded:** HSC location (complete verified address/hours not provided); catalog inventory and UPC item point costs remain unconfigured
+- **Migrations:** `20261106033000_d3_d9_workflows.sql`, `20261106040000_service_role_table_permissions.sql`, and `20261106052000_replace_demo_items_with_catalog.sql` are local and pending user push; no D3-D9 production verification has occurred
 ### D10. User Extras: Not started
 ### D11. Quality and Launch: In Progress
-- Deploy config and documentation tests exist; workflow integration/live database tests, accessibility/mobile review, and production deployment remain
+- Frontend: 18 unit tests pass; TypeScript check and production build pass. Tests cover API and local shopping-list utilities, not full rendered-page interactions.
+- Backend/repository: API route smoke tests, nutrition lookup tests, and documentation checks pass (71 tests in the last full run).
+- Responsive styles and visible keyboard focus states are implemented; manual assistive-technology and mobile-device audits remain.
+- Supabase workflow integration/live database tests and production deployment remain.
 
 ## Decisions Made
 - Identity for now is the normalized Temple ID only (no client account or email); it is stored as plaintext on orders, included in the QR, and restricted to trusted backend/staff access
@@ -93,31 +102,26 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 - QR carries Temple ID, location ID and the list
 - Cashier must attest to checking the physical Temple ID; checkout is blocked outside location hours; no cashier overrides
 - Main Campus uses `America/New_York` (not fixed `EST`) to handle daylight-saving changes
-- The D3-D9 migration is prepared but will not be pushed until the user applies/reviews it
+- The D3-D9 workflow migration and follow-up service-role and UPC-catalog migrations are prepared locally; apply them before live verification
 - Stack: Next.js + FastAPI + Supabase on Render
 - Service worker never caches API calls (availability must be fresh)
 - Four roles: user, cashier, stocker, admin
 - Item ID and Account ID are immutable
-- Nutrition data comes from USDA lookup; optional nutrition label images, ingredients, and package weight are supported in the catalog
+- Product metadata is sourced from Open Food Facts; exact branded UPC nutrition is sourced from USDA FoodData Central when available, while generic USDA searches report per 100 g
 
 ## Decisions Pending
-- Point costs and real inventory for the generic sample items
+- Point costs and real inventory for the eight UPC-identified catalog items
 - Verified HSC location details and hours
-- Public checkout preview exposes derived points/limit eligibility to anyone who knows a Temple ID; decide whether to add client authentication or an abuse-control mechanism before production use
-- Client accounts remain out of scope for D5; revisit for pings, reports and chat
+- Public checkout preview exposes derived points/limit eligibility to anyone who knows a Temple ID; decide whether to add an abuse-control mechanism before production use
+- Client accounts remain out of scope for now; revisit if pings, reports, or chat are implemented
 - Push ping method (web push vs email), live chat approach, and recipe lookup source
 - Upgrade Render plan or add a keep-alive so the API doesn't sleep; rename Render services when redeploying
-- Push ping method (web push vs email)
-- Live chat approach
-- Recipe lookup source
-- Upgrade Render plan or add a keep-alive so the API doesn't sleep
-- Rename Render services (grocery-* to pantry-owl-*)
 
 ## Blockers
 None.
 
 ## Next Up
-User applies the D3-D9 migration, then verify the database workflows and assign real pantry inventory/point costs before launch.
+User applies the pending workflow, service-role permission, and UPC catalog migrations; then verify the database workflows and assign pantry inventory/point costs before launch. Continue the D11 accessibility, mobile, and end-to-end checks.
 
 ## Session Log
 - 2026-11-05: Created PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md from feature checklist.
@@ -130,3 +134,4 @@ User applies the D3-D9 migration, then verify the database workflows and assign 
 - 2026-11-06: Implemented the D2 schema migration (tags, locations, stock, roles, orders, atomic checkout and RLS); moved browse/admin catalog surfaces from categories to tags.
 - 2026-11-06: Implemented D3-D9 workflows, UI, and Main Campus location seed. Frontend build and Python compilation pass; migration is pending user push and live database verification.
 - 2026-11-06: Replaced generic catalog seed items with eight products found from supplied UPCs; added exact USDA Branded Foods UPC lookup. Two UPCs had no catalog matches and were omitted as requested.
+- 2026-11-06: Expanded the storefront with responsive catalog cards, search/tag controls, availability and quick-add actions, empty/loading states, and a pantry-focused hero. Moved locations into the hamburger menu and list/sign-in into cart/account icon controls. Frontend tests, typecheck, and production build pass.
