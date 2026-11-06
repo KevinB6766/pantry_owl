@@ -32,6 +32,7 @@ ITEM = {
     "id": 1,
     "name": "Test Item",
     "nutrition_query": "Test Item",
+    "barcode": None,
     "points_cost": 2,
     "tags": ["fruit"],
 }
@@ -99,7 +100,7 @@ class FakeQuery:
         if self.table_name == "items":
             if self.selection == "tags":
                 return SimpleNamespace(data=[{"tags": ["fruit"]}])
-            if self.selection == "name, nutrition_query":
+            if self.selection == "name, nutrition_query, barcode":
                 return SimpleNamespace(data=[ITEM])
             if self.selection == "id, name, points_cost":
                 return SimpleNamespace(data=[ITEM])

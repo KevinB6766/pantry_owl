@@ -4,9 +4,10 @@ Project docs: [PROJECT.md](PROJECT.md) · [DELIVERABLES.md](DELIVERABLES.md) · 
 
 ## 1. Supabase
 1. Create a project at supabase.com.
-2. From the repository root, run `npx supabase login`, `npx supabase link --project-ref <project-ref>`, then `npx supabase db push --remote` to apply the ordered migrations in `supabase/migrations/` to the linked project. This is the recommended setup for both new and existing projects. The linked project in this workspace already has D2; the D3-D9 migration is prepared but has not been pushed.
+2. From the repository root, run `npx supabase login`, `npx supabase link --project-ref <project-ref>`, then `npx supabase db push --remote` to apply the ordered migrations in `supabase/migrations/` to the linked project. This is the recommended setup for both new and existing projects. The linked project in this workspace already has D2; the remaining workflow, permission, and catalog migrations need to be pushed.
 3. Alternatively, `supabase/schema.sql` is an idempotent full-schema script for the SQL Editor. Do not apply it and the CLI migrations as separate histories to the same project.
 4. Existing category slugs are migrated to tags and the obsolete categories table is removed. The migration seeds Main Campus Cherry Pantry at 1755 N 13th St, Philadelphia, PA 19122, with the supplied Fall 2026 hours and `America/New_York` timezone. HSC details and real item stock/point costs still need verification.
+   The catalog migration replaces the seven generic demo items with eight supplied barcode products found in Open Food Facts. The two unmatched barcodes were omitted; configure point costs and stock after applying the migration.
 5. Project Settings → API Keys: use the `sb_secret_...` key for backend `SUPABASE_SERVICE_KEY` and the `sb_publishable_...` key for frontend `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Keep the secret key server-side.
    The migrations grant the backend service role access to the application tables and sequences. If the database was set up before this grant migration, run `npx supabase db push --remote` again.
 6. (Optional for dev) Authentication → Providers → Email → turn off "Confirm email".

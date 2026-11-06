@@ -1,6 +1,6 @@
 # Pantry Owl: Current State
 
-**Last updated:** 2026-11-06 (D3-D9 implementation complete locally; migration not pushed)
+**Last updated:** 2026-11-06 (UPC catalog and USDA lookup updates; migrations pending push)
 **Repo:** https://github.com/KevinB6766/pantry_owl.git
 **Last commit reviewed:** `791274d` "Implement admin barcode item entry workflow and update related documentation" (2026-11-06). The D2 schema migration and Supabase project config are in this working tree.
 
@@ -15,7 +15,7 @@ Status key: Not started · In progress · Done
 ---
 
 ## Overall Snapshot
-A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browsing, staff roles, location-scoped local lists and QR pickup. D3-D9 code and the follow-up migration are implemented locally. Only the D2 migration has been pushed to Supabase; the D3-D9 migration is not pushed or live-verified.
+A working prototype: a Next.js frontend and FastAPI backend on Supabase, with browsing, staff roles, location-scoped local lists and QR pickup. D3-D9 code and the follow-up migrations are implemented locally. Only the D2 migration has been pushed to Supabase; workflow, permission, and UPC catalog migrations remain pending and are not live-verified.
 
 ## Stack (decided, from repo)
 | Layer | Choice |
@@ -23,12 +23,12 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 | Frontend | Next.js (`^16.4.5`, builds fine with React 18) + React 18 + TypeScript, App Router |
 | Backend | FastAPI 0.115 + Uvicorn, Supabase Python client |
 | Database / Auth | Supabase (Postgres, Supabase Auth email/password, RLS on) |
-| External data | USDA FoodData Central (nutrition per 100 g, in-memory cache) |
+| External data | USDA FoodData Central (generic nutrition per 100 g, branded UPCs per serving, in-memory cache) |
 | Hosting | Render via `render.yaml` (services `grocery-api`, `grocery-web`; free tier sleeps when idle) |
 
 ## What exists in the repo
-- `supabase/schema.sql`: idempotent full schema for SQL Editor setup; includes D2 and D3-D9 objects, RLS, and 7 generic catalog items
-- `supabase/migrations/`: D2 database foundation (pushed) and D3-D9 workflows/location seed (pending push)
+- `supabase/schema.sql`: idempotent full schema for SQL Editor setup; includes D2 and D3-D9 objects, RLS, and 8 UPC-identified catalog items
+- `supabase/migrations/`: D2 foundation is pushed; workflow, service-role grant, and UPC catalog migrations are pending push
 - `backend/app/`: `main.py`, `auth.py`, `security.py`, `workflows.py`, `db.py`, `nutrition.py`
 - API includes catalog browsing, role checks, checkout preview and atomic cashier checkout, location/stock/dashboard/admin workflows, notices, and promotions
 - `frontend/src/`: pages for home (search and tag chips), item detail (add to list, nutrition table), my list, login/sign-up; `NavBar`; `lib/api.ts`, `lib/supabase.ts`
@@ -129,3 +129,4 @@ User applies the D3-D9 migration, then verify the database workflows and assign 
 - 2026-11-06: Started an admin-only Open Food Facts barcode item-entry workflow; full role management and dashboard remain out of scope.
 - 2026-11-06: Implemented the D2 schema migration (tags, locations, stock, roles, orders, atomic checkout and RLS); moved browse/admin catalog surfaces from categories to tags.
 - 2026-11-06: Implemented D3-D9 workflows, UI, and Main Campus location seed. Frontend build and Python compilation pass; migration is pending user push and live database verification.
+- 2026-11-06: Replaced generic catalog seed items with eight products found from supplied UPCs; added exact USDA Branded Foods UPC lookup. Two UPCs had no catalog matches and were omitted as requested.

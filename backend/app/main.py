@@ -164,11 +164,13 @@ def item(item_id: int, location_id: Optional[UUID] = None):
 
 @app.get("/items/{item_id}/nutrition")
 def item_nutrition(item_id: int):
-    res = supabase.table("items").select("name, nutrition_query").eq("id", item_id).execute()
+    res = supabase.table("items").select("name, nutrition_query, barcode").eq("id", item_id).execute()
     if not res.data:
         raise HTTPException(404, "Item not found")
     row = res.data[0]
-    data = get_nutrition(row["nutrition_query"] or row["name"])
+    data = get_nutrition(row["barcode"]) if row.get("barcode") else None
+    if not data:
+        data = get_nutrition(row["nutrition_query"] or row["name"])
     if not data:
         raise HTTPException(404, "No nutrition data found")
     return data

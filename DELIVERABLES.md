@@ -12,7 +12,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Add PROJECT / DELIVERABLES / CURRENT_STATE to repo
 
 ## D2. Database
-- [x] Items table, migrated from categories to tags; point costs for generic seed items still need configuration
+- [x] Items table, migrated from categories to tags; catalog point costs still need configuration
 - [x] Immutable Item ID enforced (trigger)
 - [x] Locations table (immutable ID, contact/address fields, timezone, weekly points default 16, Monday week start, active)
 - [x] Location hours table (weekly schedule, multiple windows per day)
@@ -29,7 +29,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Shopping lists are stored locally by location; no client account is needed
 - [x] Transaction/order tables and splash notices
 - [ ] Stars/pings, reports, and chat tables
-- [~] Seed data (7 generic items; configure point costs and replace with pantry items)
+- [~] Seed data (8 UPC-identified items; configure point costs)
 
 ## D3. Auth and Roles
 - [x] Staff login uses Supabase email/password profiles
