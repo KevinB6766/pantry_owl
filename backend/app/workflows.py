@@ -200,7 +200,7 @@ def _preview(location_id: str, temple_id: str, lines: list[LocationLine]) -> dic
     local_now = datetime.now(ZoneInfo(location["timezone"]))
     week_start = (
         local_now.date()
-        - ((local_now.weekday() - (location["week_start_day"] - 1)) % 7)
+        - timedelta(days=(local_now.weekday() - (location["week_start_day"] - 1)) % 7)
     )
     week_start_utc = datetime.combine(
         week_start, time.min, tzinfo=ZoneInfo(location["timezone"])

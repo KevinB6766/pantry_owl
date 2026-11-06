@@ -706,4 +706,7 @@ create policy "public read active splash notices" on public.splash_notices
     and exists (select 1 from public.locations where id = location_id and active)
   );
 
+grant select, insert, update, delete on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to service_role;
+
 commit;
