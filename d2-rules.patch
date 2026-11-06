@@ -1,0 +1,558 @@
+From 2f201b1c0c4e201ed5ec748141df9d06422322b4 Mon Sep 17 00:00:00 2001
+From: claude <claude@example.com>
+Date: Fri, 6 Nov 2026 02:03:36 +0000
+Subject: [PATCH] Docs: record points, per-person limits, read-only/QR model,
+ Temple ID identity, and per-location rules, details and hours
+
+---
+ CURRENT_STATE.md          |  26 +++-
+ DELIVERABLES.md           |  25 +++-
+ PROJECT.md                | 101 +++++++++++++-
+ tests/test_patch2_docs.py | 269 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 409 insertions(+), 12 deletions(-)
+ create mode 100644 tests/test_patch2_docs.py
+
+diff --git a/CURRENT_STATE.md b/CURRENT_STATE.md
+index e602204..811febe 100644
+--- a/CURRENT_STATE.md
++++ b/CURRENT_STATE.md
+@@ -7,7 +7,8 @@
+ ## How to use this file
+ 1. **Before starting a deliverable:** read its section here and its checklist in [DELIVERABLES.md](DELIVERABLES.md). Confirm repo state against it.
+ 2. **While working:** set the deliverable status to In Progress and note blockers.
+-3. **After finishing:** update the deliverable's section (status, what exists, gaps, commit), tick items in DELIVERABLES.md, adjust Decisions, and add a Session Log line.
++3. **Tests:** run `pytest tests/` after any change to these docs or the schema. `tests/test_patch2_docs.py` checks that the three docs agree with each other and with the decided rules.
++4. **After finishing:** update the deliverable's section (status, what exists, gaps, commit), tick items in DELIVERABLES.md, adjust Decisions, and add a Session Log line.
+ 
+ Status key: Not started · In progress · Done
+ 
+@@ -47,6 +48,7 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
+ 
+ ### D2. Database: Not started (partial groundwork)
+ - **Exists:** `items` (id, name, description, price, image_url, category_id, nutrition_query), `categories`, `shopping_list`
++- **Rules to add (decided):** `locations` table (address, contact, timezone, weekly points, week start), `location_hours`, `location_closures`, per-location stock/availability/`limit_per_person`, weekly points derived from orders, atomic checkout, read-only RLS
+ - **Missing from spec:** immutable Item ID enforcement (id is `serial` but not locked), tags, points cost, nutrition label image, weight, ingredients text, amount, limits, combos, out-of-stock flag, added date, extra image URLs for carousel; profiles/roles table; transactions; stars/pings; splash notices; reports; chat
+ - **Note:** `categories` is not in the spec; decide whether it stays alongside tags
+ 
+@@ -71,6 +73,13 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
+ - Deploy config exists; no tests in repo
+ 
+ ## Decisions Made
++- Identity for now is the Temple ID only (no client account or email); it goes in the QR and on each order
++- Users are read-only on the database; shopping list is stored locally; checkout is a QR code the cashier scans and verifies
++- Rules are assigned to a **location** (multiple pantries on different campuses): weekly points (default 16, cap, no carryover), per-item limits, stock and staff are all per location
++- Each location also stores address, coordinates, contact info, notes, timezone, a weekly hours schedule and one-off closures; open-now is computed, not stored
++- Item catalog is shared; stock, availability and `limit_per_person` live on a per-location item row
++- Weekly balance is derived from this week's orders at that location, so no reset job is needed
++- QR carries Temple ID, location ID and the list
+ - Stack: Next.js + FastAPI + Supabase on Render
+ - Service worker never caches API calls (availability must be fresh)
+ - Four roles: user, cashier, stocker, admin
+@@ -79,11 +88,19 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
+ 
+ ## Decisions Pending
+ - Keep or replace `categories` (spec uses tags)
+-- Points vs price model
++- Whether the Temple ID is verified by the cashier and whether it is stored as-is or hashed
++- Client email/accounts set aside; revisit for pings, reports and chat
++- Whether limits reset weekly or apply per visit
++- Whether checkout is blocked outside operating hours
++- Whether a person's 16 points are shared across pantries or per pantry
++- Whether points costs can differ by location
++- Admin scope: per location or super admin
++- How a user chooses a location
++- Default week start day and timezone (stored per location)
++- Whether cashiers can override limits or the points cap
+ - Push ping method (web push vs email)
+ - Live chat approach
+ - Recipe lookup source
+-- Whether guests can build and save a list without an account
+ - Upgrade Render plan or add a keep-alive so the API doesn't sleep
+ - Rename Render services (grocery-* to pantry-owl-*)
+ 
+@@ -97,3 +114,6 @@ D2 Database. Decide first: keep `categories` or switch to tags, and points vs pr
+ - 2026-11-05: Created PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md from feature checklist.
+ - 2026-11-05: Reviewed repo (commit `32a15e3`), found existing stack and prototype, rewrote all three files to match.
+ - 2026-11-05: D1 completed. Rebranded, verified build, added PWA shell and docs. Render rename deferred.
++- 2026-11-05: Recorded points rule (16/week, no carryover), per-person limits, and read-only/QR architecture in all three files.
++- 2026-11-05: Identity set to Temple ID only; email and accounts deferred.
++- 2026-11-05: Moved rules, stock and limits to a per-location model; added location details, weekly hours and closures.
+diff --git a/DELIVERABLES.md b/DELIVERABLES.md
+index 9492b7a..fe533f9 100644
+--- a/DELIVERABLES.md
++++ b/DELIVERABLES.md
+@@ -14,7 +14,17 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
+ ## D2. Database
+ - [~] Items table (exists; missing most spec fields)
+ - [ ] Immutable Item ID enforced (trigger)
+-- [ ] Item fields: tags, points cost, nutrition label image, weight, ingredients, amount, limits, combos, out-of-stock, added date, extra images
++- [ ] Locations table (immutable Location ID, name, campus, building/room, street address, lat/long, directions and accessibility notes, phone/email, photo, timezone, weekly points default 16, week start day, active)
++- [ ] Location hours table (weekly schedule, multiple windows per day)
++- [ ] Location closures / special hours table (holidays, emergencies, with user-facing message)
++- [ ] Seed one or two sample locations with hours
++- [ ] Location items table: per-location amount, availability override, `limit_per_person` (nullable)
++- [ ] Item catalog fields (shared): tags, points cost, nutrition label image, weight, ingredients, combos, added date, extra images
++- [ ] Staff profiles tied to a location (cashier, stocker); admin scope decided
++- [ ] Weekly points per location (default 16, cap = weekly points, no carryover; balance derived from this week's spend at that location)
++- [ ] Orders and order_items, keyed by Temple ID and location ID (store points and quantity per line; used for weekly points, limits and dashboard)
++- [ ] Atomic checkout function (stock, limits, points, duplicate-QR rejection)
++- [ ] RLS: read-only for users, no public writes
+ - [ ] Profiles table (immutable Acct ID, permissions, email)
+ - [~] Shopping lists (exists, server-side)
+ - [ ] Transactions, stars/pings, splash notices, reports, chat tables
+@@ -24,6 +34,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
+ - [~] Login for all roles (email/password works; no roles)
+ - [ ] User / Cashier / Stocker / Admin permissions enforced in API
+ - [ ] Admin account control, including removing cashiers
++- [ ] Staff limited to their own location
+ 
+ ## D4. Item Browsing
+ - [~] Item list, search, category filter, detail page
+@@ -36,12 +47,16 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
+ 
+ ## D5. Shopping List and QR
+ - [~] Add to list, quantities (login required)
+-- [ ] Enforce item limits
++- [ ] Choose location (shows address, hours, open now); list is scoped to it
++- [ ] Ask for Temple ID in the list; include Temple ID and location ID in the QR
++- [ ] Show points remaining (of the location's weekly points) and block adding past the weekly balance
++- [ ] Enforce the location's `limit_per_person` in the list UI (for example, "2 max")
+ - [ ] Save list locally
+ - [ ] QR code generation from list
+ 
+ ## D6. Cashier Tools
+-- [ ] QR scan
++- [ ] QR scan (rejects a QR for a different location)
++- [ ] Review screen shows points total, remaining balance, and per-person limit warnings
+ - [ ] Add / drop / undo / manual entry menu
+ - [ ] Change item availability
+ 
+@@ -53,11 +68,13 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
+ - [ ] Bought items
+ - [ ] Items left
+ - [ ] Most popular
++- [ ] Filter dashboard by location
+ 
+ ## D9. Splash and Promotion
+ - [ ] Homepage splash for new items
+ - [ ] Frequently bought together splash
+-- [ ] Closing / emergency notices
++- [ ] Closing / emergency notices (per location, linked to closures table)
++- [ ] Location info page: address, map/directions link, hours, closures, contact
+ 
+ ## D10. User Extras
+ - [ ] Star items and availability pings
+diff --git a/PROJECT.md b/PROJECT.md
+index 33b1ac7..344cad1 100644
+--- a/PROJECT.md
++++ b/PROJECT.md
+@@ -31,16 +31,66 @@ All roles can log in.
+ | Price | |
+ | Image URL | Supports carousel (multiple images) |
+ | Tags | vegan, vegetarian, halal, kosher, canned, fruit, veggie, grain, pasta, etc. |
+-| Points cost | |
++| Points cost | Points an item costs per unit |
+ | Nutrition label image | |
+ | Weight | |
+ | Ingredients text | |
+-| Amount | Quantity in stock |
+-| Limits | Max per person/visit |
++| Amount | Moved to per-location stock (see Locations) |
+ | Combos | Related/frequently bought together items |
+-| Out of stock | Flag |
++| Out of stock | Moved to per-location availability (see Locations) |
+ | Added date | Drives "newly added" homepage splash |
+ 
++### Locations
++Each pantry (campus) is a location with its own details, rules, stock and staff.
++
++| Field | Notes |
++|---|---|
++| Location ID | Unchangeable |
++| Name | Display name, e.g. "Main Campus Pantry" |
++| Campus | Campus name |
++| Building / room | Where on campus |
++| Street address, city, state, ZIP | For maps and directions |
++| Latitude / longitude | Map pin and nearest-location lookup |
++| Directions note | How to find the entrance, landmarks |
++| Accessibility note | Entrances, elevators, parking |
++| Phone / contact email | Public contact |
++| Photo | Storage image of the entrance or space |
++| Timezone | Decides when a week starts and whether the pantry is open now |
++| Weekly points | Default 16. This is also the cap; no carryover |
++| Week start day | Day the weekly allotment resets |
++| Active | Hide a location without deleting its history |
++
++### Location hours
++Regular weekly schedule. A day can have several rows (for example, a lunch window and an evening window) or none (closed).
++
++| Field | Notes |
++|---|---|
++| Location ID | |
++| Day of week | 0 to 6 |
++| Opens / closes | Local time at the location's timezone |
++
++### Location closures and special hours
++One-off changes: holidays, breaks, weather, emergencies.
++
++| Field | Notes |
++|---|---|
++| Location ID | |
++| Start / end date-time | |
++| Closed or special hours | Closed all period, or replacement open/close times |
++| Reason / message | Shown to users; can feed the homepage closing/emergency splash |
++
++"Open now" and "next opening" are computed from the weekly hours, then overridden by any closure, using the location's timezone.
++
++### Location items (per-location stock and rules)
++| Field | Notes |
++|---|---|
++| Location ID + Item ID | Together identify the row |
++| Amount | Quantity in stock at this location |
++| Available | Manual override (out of stock) |
++| Limit per person | Nullable integer. `null` = no limit. Example: toiletries = 2 at this pantry |
++
++The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, availability and limits are per location.
++
+ ### Accounts
+ | Field | Notes |
+ |---|---|
+@@ -57,11 +107,43 @@ All roles can log in.
+ - Reports (bugs, issues, suggestions)
+ - Chat messages
+ 
++## 2a. Business Rules and Architecture Decisions
++
++**Rules belong to a location.** Each pantry has its own weekly points, week start, per-item limits and stock. The same item can have a different limit at each campus.
++
++**Points (per location)**
++- Default is **16 points per person per week**, set per location.
++- Balance can never exceed the location's weekly points.
++- Unspent points **do not carry over**; every week starts full.
++- Checkout cannot spend more points than remain this week.
++- Balance is derived: weekly points minus points spent in orders at this location this week.
++
++**Per-person item limits (per location)**
++- Stored on the location item as `limit_per_person` (for example, toiletries = 2).
++- Shown and enforced in the user's shopping list and again on the cashier screen.
++
++**Identity (for now)**
++- A person is identified by their **Temple ID**. No client account or email is required.
++- The Temple ID and the **location ID** are included in the QR code and stored on each order.
++- Weekly points and limits are tracked per Temple ID per location.
++
++**Staff scope**
++- Cashiers and stockers belong to one location and can only act on that location's stock and orders.
++
++**Access model**
++- Users have **read-only** access to the database (public key plus RLS `select` only).
++- The shopping list is saved **locally on the device**, scoped to the chosen location.
++- At checkout the user shows a **QR code containing the list**.
++- The **cashier scans it, verifies the physical items**, edits if needed, and confirms.
++- All writes (checkout, stock, items, accounts) go through the backend by staff roles.
++- Checkout runs as one atomic database function that checks stock, limits and points for that location, records the order, and rejects a QR that was already redeemed.
++
+ ---
+ 
+ ## 3. Features
+ 
+ ### Core
++- Location picker showing campus, address, hours and open-now status; directions link
+ - PWA (installable, offline-capable shopping list)
+ - Item browsing with tags and image carousel
+ - Add to shopping list; multiple items per item allowed
+@@ -109,7 +191,16 @@ All roles can log in.
+ - Keep `categories` or replace with tags?
+ - Can guests build and save a list without an account?
+ - Render free tier sleeps; upgrade or keep-alive?
+-- Are "points" a client balance spent at checkout, and does price still matter?
++- Is the Temple ID entered by the client or verified by the cashier (for example, checked against a physical ID)? Should Temple IDs be stored as-is or hashed?
++- Email and account login for clients are set aside for now; revisit for pings, reports and chat
++- Do per-person limits reset weekly, or apply per visit?
++- Is a person's weekly 16 points shared across all pantries, or does each pantry give its own 16?
++- Can a person shop at more than one location in the same week, and do limits then apply per location or overall?
++- Are points costs the same at every location, or can a location override them?
++- Are admins per location or across all locations (super admin)?
++- Should the user pick a location on first open, or detect it (nearest by coordinates)?
++- Can checkout happen outside operating hours, or is it blocked?
++- Can a cashier override a limit or the points cap?
+ - How are push pings delivered (web push, email)?
+ - Live chat: real-time staff chat or a bot?
+ - Recipe lookup: external API or built in?
+diff --git a/tests/test_patch2_docs.py b/tests/test_patch2_docs.py
+new file mode 100644
+index 0000000..962c8f0
+--- /dev/null
++++ b/tests/test_patch2_docs.py
+@@ -0,0 +1,269 @@
++"""Tests for patch 2: project docs, business rules, and per-location model.
++
++Patch 2 changes documentation only (PROJECT.md, DELIVERABLES.md, CURRENT_STATE.md),
++so these tests check that the docs are complete, consistent with each other, and
++free of stale statements from before the rules were decided.
++
++Run from the repo root:
++    pip install pytest
++    pytest tests/test_patch2_docs.py -v
++
++Set PANTRY_DOCS_ROOT to point the tests at a different folder of docs.
++"""
++import os
++import re
++from datetime import date
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(os.environ.get("PANTRY_DOCS_ROOT", Path(__file__).resolve().parent.parent))
++DELIVERABLE_IDS = [f"D{i}" for i in range(1, 12)]
++
++
++def read(name: str) -> str:
++    return (ROOT / name).read_text(encoding="utf-8")
++
++
++def section(text: str, heading: str) -> str:
++    """Return the text under `heading` up to the next heading of the same or higher level."""
++    m = re.search(rf"^(#+) {re.escape(heading)}[^\n]*$", text, re.M)
++    assert m, f"heading not found: {heading!r}"
++    level = len(m.group(1))
++    rest = text[m.end():]
++    nxt = re.search(rf"^#{{1,{level}}} ", rest, re.M)
++    return rest[: nxt.start()] if nxt else rest
++
++
++@pytest.fixture(scope="module")
++def project():
++    return read("PROJECT.md")
++
++
++@pytest.fixture(scope="module")
++def deliverables():
++    return read("DELIVERABLES.md")
++
++
++@pytest.fixture(scope="module")
++def state():
++    return read("CURRENT_STATE.md")
++
++
++# ---------- structure ----------
++
++def test_all_three_docs_exist():
++    for name in ("PROJECT.md", "DELIVERABLES.md", "CURRENT_STATE.md"):
++        assert (ROOT / name).is_file(), f"{name} is missing"
++
++
++def test_readme_links_to_the_docs():
++    readme = read("README.md")
++    for name in ("PROJECT.md", "DELIVERABLES.md", "CURRENT_STATE.md"):
++        assert name in readme, f"README does not link {name}"
++
++
++def test_relative_links_resolve():
++    for doc in ("PROJECT.md", "DELIVERABLES.md", "CURRENT_STATE.md", "README.md"):
++        for target in re.findall(r"\]\(([^)#]+)\)", read(doc)):
++            if target.startswith(("http://", "https://", "mailto:")):
++                continue
++            assert (ROOT / target).exists(), f"{doc} links to missing file {target}"
++
++
++def test_every_deliverable_is_in_deliverables_and_state(deliverables, state):
++    for d in DELIVERABLE_IDS:
++        assert re.search(rf"^## {d}\.", deliverables, re.M), f"{d} missing from DELIVERABLES.md"
++        assert re.search(rf"^### {d}\.", state, re.M), f"{d} missing from CURRENT_STATE.md"
++
++
++def test_current_state_has_required_sections(state):
++    for heading in ("How to use this file", "Decisions Made", "Decisions Pending", "Next Up", "Session Log"):
++        assert re.search(rf"^## {heading}", state, re.M), f"CURRENT_STATE.md lacks '{heading}'"
++
++
++def test_checkbox_syntax_is_valid(deliverables):
++    # Valid marks are [ ], [~], [x]. The original spec used "[  ]" (two spaces), which is not valid.
++    for line in deliverables.splitlines():
++        if re.match(r"^\s*- \[", line):
++            assert re.match(r"^\s*- \[( |~|x)\] \S", line), f"malformed checkbox: {line!r}"
++        assert "[  ]" not in line, f"two-space checkbox found: {line!r}"
++
++
++def test_state_dates_are_valid(state):
++    m = re.search(r"\*\*Last updated:\*\* (\d{4}-\d{2}-\d{2})", state)
++    assert m, "CURRENT_STATE.md has no 'Last updated' date"
++    date.fromisoformat(m.group(1))
++    log = section(state, "Session Log")
++    entries = [l for l in log.splitlines() if l.strip()]
++    assert entries, "Session Log is empty"
++    for line in entries:
++        dm = re.match(r"^- (\d{4}-\d{2}-\d{2}): \S", line)
++        assert dm, f"bad session log line: {line!r}"
++        date.fromisoformat(dm.group(1))
++
++
++# ---------- D1 consistency ----------
++
++def test_d1_status_agrees_across_files(deliverables, state):
++    d1_del = section(deliverables, "D1.")
++    d1_state = section(state, "D1.")
++    assert "DONE" in deliverables[deliverables.index("## D1."):].splitlines()[0]
++    assert "DONE" in state[state.index("### D1."):].splitlines()[0]
++    items = re.findall(r"^- \[(.)\]", d1_del, re.M)
++    assert items and all(i == "x" for i in items), "D1 is DONE but has unchecked items"
++    assert "Render service names" in d1_state or "grocery-api" in d1_state, "deferred Render rename not recorded"
++
++
++# ---------- points rule ----------
++
++def test_points_rule_is_documented(project):
++    rules = section(project, "2a.")
++    assert "16 points" in rules
++    assert re.search(r"never exceed", rules, re.I), "cap rule missing"
++    assert re.search(r"do not carry over", rules, re.I), "no-carryover rule missing"
++    assert re.search(r"derived", rules, re.I), "derived-balance design missing"
++
++
++def test_points_default_matches_location_table(project):
++    locations = section(project, "Locations")
++    assert re.search(r"Weekly points.*16", locations), "Locations table must show the default of 16"
++
++
++# ---------- per-person limit ----------
++
++def test_limit_per_person_lives_on_location_items_not_items(project):
++    items = section(project, "Items")
++    assert "limit_per_person" not in items.lower().replace(" ", "_") or "moved" in items.lower()
++    assert "Limit per person" not in items, "limit still listed on the shared Items table"
++    loc_items = section(project, "Location items")
++    assert re.search(r"Limit per person", loc_items)
++    assert "toiletries = 2" in loc_items
++
++
++def test_stock_fields_moved_off_shared_items(project):
++    items = section(project, "Items")
++    assert "Quantity in stock" not in items, "stock still described as an item-level field"
++    assert "per-location" in items
++
++
++def test_limit_is_enforced_in_user_and_cashier_flows(deliverables):
++    assert "limit_per_person" in section(deliverables, "D5.")
++    assert re.search(r"limit", section(deliverables, "D6."), re.I)
++
++
++# ---------- Temple ID identity ----------
++
++def test_temple_id_is_documented_everywhere(project, deliverables, state):
++    for name, text in (("PROJECT", project), ("DELIVERABLES", deliverables), ("CURRENT_STATE", state)):
++        assert "Temple ID" in text, f"Temple ID missing from {name}.md"
++
++
++def test_identity_question_is_not_left_open_and_decided(project, state):
++    assert "How is a person identified" not in project
++    assert "How a person is identified" not in section(state, "Decisions Pending")
++
++
++def test_qr_carries_temple_id_and_location(project, state):
++    rules = section(project, "2a.")
++    assert re.search(r"Temple ID and the \*\*location ID\*\*.*QR", rules, re.S)
++    assert "QR carries Temple ID, location ID" in state
++
++
++# ---------- location model ----------
++
++def test_location_tables_are_documented(project):
++    for heading in ("Locations", "Location hours", "Location closures", "Location items"):
++        assert re.search(rf"^### {heading}", project, re.M), f"PROJECT.md lacks '### {heading}'"
++
++
++@pytest.mark.parametrize("field", [
++    "Location ID", "Name", "Campus", "Building / room", "Street address", "Latitude",
++    "Directions note", "Accessibility note", "Phone", "Timezone", "Weekly points", "Week start day", "Active",
++])
++def test_locations_table_has_field(project, field):
++    assert field in section(project, "Locations"), f"Locations table missing {field!r}"
++
++
++def test_hours_and_closures_fields(project):
++    hours = section(project, "Location hours")
++    for f in ("Day of week", "Opens / closes"):
++        assert f in hours
++    closures = section(project, "Location closures")
++    for f in ("Start / end", "Closed or special hours", "Reason"):
++        assert f in closures
++    assert "Open now" in project and "computed" in project
++
++
++def test_location_id_is_unchangeable(project):
++    assert re.search(r"Location ID \| Unchangeable", project)
++
++
++def test_d2_covers_the_location_model(deliverables):
++    d2 = section(deliverables, "D2.")
++    for needle in ("Locations table", "Location hours", "closures", "Location items", "Orders and order_items",
++                   "Atomic checkout", "RLS", "Temple ID"):
++        assert needle.lower() in d2.lower(), f"D2 does not mention {needle!r}"
++
++
++def test_location_features_appear_in_later_deliverables(deliverables):
++    assert "location" in section(deliverables, "D3.").lower()   # staff limited to own location
++    assert "location" in section(deliverables, "D5.").lower()   # location picker
++    assert "location" in section(deliverables, "D6.").lower()   # QR for wrong location rejected
++    assert "location" in section(deliverables, "D8.").lower()   # dashboard filter
++    assert "location" in section(deliverables, "D9.").lower()   # closures and info page
++
++
++def test_staff_are_scoped_to_one_location(project):
++    assert re.search(r"belong to one location", project)
++
++
++# ---------- architecture ----------
++
++def test_read_only_user_model_is_documented(project):
++    rules = section(project, "2a.")
++    assert re.search(r"\*\*read-only\*\*", rules)
++    assert re.search(r"saved \*\*locally", rules)
++    assert re.search(r"already redeemed|redeemed", rules)
++    assert "atomic" in rules
++
++
++def test_no_server_side_shopping_list_planned(deliverables):
++    d5 = section(deliverables, "D5.")
++    assert "Save list locally" in d5
++    d2 = section(deliverables, "D2.")
++    # existing prototype table is marked as such, not planned as the end state
++    assert "[~] Shopping lists (exists, server-side)" in d2
++
++
++# ---------- stale text ----------
++
++@pytest.mark.parametrize("stale", [
++    "Max per person/visit",
++    "How is a person identified so the weekly 16 points",
++    "Whether guests can build and save a list without an account",
++    "Points vs price model",
++])
++def test_stale_statements_are_gone(project, deliverables, state, stale):
++    for name, text in (("PROJECT", project), ("DELIVERABLES", deliverables), ("CURRENT_STATE", state)):
++        assert stale not in text, f"stale text in {name}.md: {stale!r}"
++
++
++# ---------- open questions ----------
++
++def test_open_questions_are_wellformed_and_current(project):
++    qs = section(project, "5. Open Questions")
++    lines = [l for l in qs.splitlines() if l.strip()]
++    assert lines and all(l.startswith("- ") for l in lines)
++    text = "\n".join(lines)
++    for topic in ("shared across all pantries", "outside operating hours", "Temple ID", "super admin"):
++        assert topic.lower() in text.lower(), f"open question about {topic!r} is missing"
++
++
++def test_pending_decisions_are_not_also_listed_as_decided(state):
++    decided = section(state, "Decisions Made").lower()
++    pending = section(state, "Decisions Pending").lower()
++    assert "temple id only" in decided
++    assert "weekly points" in decided or "16" in decided
++    assert "chat approach" in pending and "recipe" in pending   # untouched pending items survive
++    assert "temple id only" not in pending
+-- 
+2.43.0
