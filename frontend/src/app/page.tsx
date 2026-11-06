@@ -24,7 +24,7 @@ export default function Home() {
 
   return (
     <>
-      <h1>Groceries</h1>
+      <h1>Pantry</h1>
       <input placeholder="Search items…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="chips">
         <button className={`chip ${category === null ? "active" : ""}`} onClick={() => setCategory(null)}>All</button>

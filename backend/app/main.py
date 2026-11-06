@@ -12,7 +12,7 @@ from .auth import current_user_id  # noqa: E402
 from .db import supabase  # noqa: E402
 from .nutrition import get_nutrition  # noqa: E402
 
-app = FastAPI(title="Grocery API")
+app = FastAPI(title="Pantry Owl API")
 
 app.add_middleware(
     CORSMiddleware,

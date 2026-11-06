@@ -16,7 +16,7 @@ export default function NavBar() {
 
   return (
     <nav className="nav">
-      <Link href="/" className="brand">🛒 Grocery</Link>
+      <Link href="/" className="brand">🦉 Pantry Owl</Link>
       <div className="navlinks">
         <Link href="/list">My list</Link>
         {session ? (

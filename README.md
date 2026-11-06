@@ -1,4 +1,6 @@
-# Grocery app (FastAPI + Next.js + Supabase, deployed on Render)
+# Pantry Owl (FastAPI + Next.js + Supabase, deployed on Render)
+
+Project docs: [PROJECT.md](PROJECT.md) · [DELIVERABLES.md](DELIVERABLES.md) · [CURRENT_STATE.md](CURRENT_STATE.md)
 
 ## 1. Supabase
 1. Create a project at supabase.com.

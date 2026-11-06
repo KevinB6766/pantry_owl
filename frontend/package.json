@@ -1,5 +1,5 @@
 {
-  "name": "grocery-web",
+  "name": "pantry-owl-web",
   "private": true,
   "scripts": {
     "dev": "next dev",
