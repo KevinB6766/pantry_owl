@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-06 (D2 schema implemented; location data pending)
 **Repo:** https://github.com/KevinB6766/pantry_owl.git
-**Last commit reviewed:** `791274d` "Implement admin barcode item entry workflow and update related documentation" (2026-11-06). The D2 schema and tag UI changes in this working tree are uncommitted.
+**Last commit reviewed:** `791274d` "Implement admin barcode item entry workflow and update related documentation" (2026-11-06). The D2 schema migration and Supabase project config are in this working tree.
 
 ## How to use this file
 1. **Before starting a deliverable:** read its section here and its checklist in [DELIVERABLES.md](DELIVERABLES.md). Confirm repo state against it.
@@ -49,7 +49,8 @@ A working prototype: a Next.js frontend and FastAPI backend on Supabase, with br
 ### D2. Database: In Progress (schema foundation implemented)
 - **Exists:** immutable catalog IDs, tags (migrated from old categories), shared points cost with location override, nutrition/weight/ingredients/images/combos, location details/hours/closures, per-location stock and weekly limits, staff profiles, orders, order snapshots, atomic checkout, read-only RLS and the existing shopping-list table (read-only policy)
 - **Migration behavior:** `supabase/schema.sql` is idempotent for existing projects, migrates category slugs into tags, then removes the obsolete category table/column. Item point costs remain unset until configured; checkout rejects an item whose effective points cost is unset.
-- **Still needed:** verified location records and hours, real pantry seed data and point costs; exercise the migration and checkout against a Supabase/Postgres project; staff-management and cashier/stocking API routes; non-database D2 features (stars/pings, splash notices, reports, chat)
+- **Applied:** migration `20261106031500_d2_database_foundation.sql` was pushed to the linked production Supabase project on 2026-11-06; a subsequent remote dry run confirmed it is up to date.
+- **Still needed:** verified location records and hours, real pantry seed data and point costs; exercise checkout behavior against the live database; staff-management and cashier/stocking API routes; non-database D2 features (stars/pings, splash notices, reports, chat)
 
 ### D3. Auth and Roles: In Progress (profile schema implemented)
 - **Exists:** Supabase email/password sign in and sign up; backend token validation via `current_user_id`

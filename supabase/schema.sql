@@ -53,7 +53,7 @@ begin
   ) then
     update public.items as i
     set tags = array(
-      select distinct lower(trim(tag))
+      select distinct lower(trim(migrated_tag.value))
       from unnest(coalesce(i.tags, '{}'::text[]) || array[c.slug]) as migrated_tag(value)
       where trim(migrated_tag.value) <> ''
       order by lower(trim(migrated_tag.value))
