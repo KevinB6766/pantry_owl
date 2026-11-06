@@ -19,7 +19,6 @@ type AdminItem = Omit<BarcodeProduct, "nutrition_query"> & {
   nutrition_label_image_url: string | null;
   extra_images: string[];
   nutrition_query: string | null;
-  price: number | null;
 };
 
 type AdminUser = { id: string; email: string | null; role: string; location_id: string | null };
@@ -43,7 +42,6 @@ export default function AdminPage() {
   const [nutritionQuery, setNutritionQuery] = useState("");
   const [tags, setTags] = useState("");
   const [pointsCost, setPointsCost] = useState("");
-  const [price, setPrice] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
   const [locationId, setLocationId] = useState("");
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -128,7 +126,6 @@ export default function AdminPage() {
           nutrition_query: nutritionQuery.trim() || null,
           nutrition_label_image_url: nutritionLabelUrl.trim() || null,
           extra_images: extraImages.split(",").map((image) => image.trim()).filter(Boolean),
-          price: price === "" ? null : Number(price),
         } satisfies AdminItem),
       }, true);
       setNotice(`${name.trim()} was added to the catalog.`);
@@ -136,7 +133,6 @@ export default function AdminPage() {
       setProduct(null);
       setTags("");
       setPointsCost("");
-      setPrice("");
       setNutritionLabelUrl("");
       setExtraImages("");
     } catch (e) {
@@ -265,8 +261,6 @@ export default function AdminPage() {
           <label htmlFor="item-points-cost">Points cost per item</label>
           <input id="item-points-cost" type="number" min="0" step="1" required value={pointsCost} onChange={(event) => setPointsCost(event.target.value)} />
 
-          <label htmlFor="item-price">Price (optional)</label>
-          <input id="item-price" type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} />
           <button type="submit" disabled={saving}>
             {saving ? "Adding item…" : "Add item to catalog"}
           </button>

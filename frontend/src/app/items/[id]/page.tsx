@@ -49,8 +49,7 @@ export default function ItemPage() {
       )}
       {item.tags.length > 0 && <p className="muted">{item.tags.join(", ")}</p>}
       <p>{item.description}</p>
-      {item.price != null && <p><strong>${item.price.toFixed(2)}</strong></p>}
-      {pointsCost != null && <p><strong>{pointsCost} points</strong></p>}
+      <p><strong>{pointsCost != null ? `${pointsCost} pts` : "Points TBD"}</strong></p>
       {item.weight && <p><strong>Package size:</strong> {item.weight}</p>}
       {item.location_stock ? (
         <p className={item.location_stock.available && item.location_stock.amount > 0 ? "status-open" : "status-closed"}>

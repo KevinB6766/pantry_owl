@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, Item, Location } from "@/lib/api";
 import { addSavedItem, getSelectedLocation, setSelectedLocation } from "@/lib/pantry";
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loadingItems, setLoadingItems] = useState(false);
   const [toast, setToast] = useState("");
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api<string[]>("/tags").then(setTags).catch((e) => setError(e.message));
@@ -71,24 +72,13 @@ export default function Home() {
     window.setTimeout(() => setToast(""), 2400);
   }
 
+  function scrollItems(direction: -1 | 1) {
+    const carousel = carouselRef.current;
+    if (carousel) carousel.scrollBy({ left: direction * carousel.clientWidth * 0.8, behavior: "smooth" });
+  }
+
   return (
     <div className="home-page">
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Good food, shared locally</p>
-          <h1>A little goodness goes a long way.</h1>
-          <p>Browse what’s available at your neighborhood pantry and build a pickup list at your own pace.</p>
-          {location && (
-            <Link className="hero-location" href="/locations">
-              <span aria-hidden="true">⌖</span>
-              <span>{location.name} · {location.status_message}</span>
-              <span aria-hidden="true">↗</span>
-            </Link>
-          )}
-        </div>
-        <div className="hero-art" aria-hidden="true">🧺</div>
-      </section>
-
       {locations.length > 1 && (
         <label className="stack">
           Choose a pantry
@@ -117,6 +107,53 @@ export default function Home() {
           <p>{closure.message || (closure.is_closed ? "This pantry is temporarily closed." : "Special opening hours apply.")}</p>
         </section>
       ))}
+
+      <section className="home-section item-carousel-section" aria-labelledby="item-carousel-heading">
+        <div className="section-heading item-carousel-heading">
+          <div>
+            <p className="eyebrow">{location?.name ?? "Browse the pantry"}</p>
+            <h1 id="item-carousel-heading">Pantry picks</h1>
+          </div>
+          <div className="carousel-controls">
+            <button type="button" title="Previous items" aria-label="Previous items" onClick={() => scrollItems(-1)}>←</button>
+            <button type="button" title="Next items" aria-label="Next items" onClick={() => scrollItems(1)}>→</button>
+          </div>
+        </div>
+        {items.length ? (
+          <div className="item-carousel" ref={carouselRef}>
+            {items.map((item) => {
+              const inStock = Boolean(item.location_stock?.available && item.location_stock.amount > 0);
+              const points = item.location_stock?.points_cost_override ?? item.points_cost;
+              return (
+                <article key={item.id} className="card item-carousel-card">
+                  <Link href={`/items/${item.id}`} aria-label={`View ${item.name}`}>
+                    <div className="card-image-wrap">
+                      {item.image_url
+                        ? <img className="card-image" src={item.image_url} alt="" loading="lazy" />
+                        : <span className="card-image-placeholder" aria-hidden="true">🥬</span>}
+                      <span className={`stock-badge ${item.location_stock && !inStock ? "out" : ""}`}>
+                        {item.location_stock ? (inStock ? `${item.location_stock.amount} available` : "Out of stock") : "Not stocked here yet"}
+                      </span>
+                    </div>
+                  </Link>
+                  <div className="card-body">
+                    <Link href={`/items/${item.id}`} className="card-title">{item.name}</Link>
+                    <div className="card-meta">
+                      <span className="card-tags">{item.tags.slice(0, 2).join(" · ") || "Pantry staple"}</span>
+                      <span>{points != null ? `${points} pts` : "Points TBD"}</span>
+                    </div>
+                    <button className="card-action" disabled={!inStock} onClick={() => addToList(item)}>
+                      {inStock ? "＋ Add to my list" : "View item"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty-state" aria-live="polite"><p>{loadingItems ? "Loading pantry picks…" : "No items to show yet."}</p></div>
+        )}
+      </section>
 
       {promotions?.new_items.length ? (
         <section className="home-section">
@@ -204,7 +241,7 @@ export default function Home() {
                     <Link href={`/items/${item.id}`} className="card-title">{item.name}</Link>
                     <div className="card-meta">
                       <span className="card-tags">{item.tags.slice(0, 2).join(" · ") || "Pantry staple"}</span>
-                      <span>{points != null ? `${points} pts` : item.price != null ? `$${item.price.toFixed(2)}` : "Details"}</span>
+                      <span>{points != null ? `${points} pts` : "Points TBD"}</span>
                     </div>
                     <button className="card-action" disabled={!inStock} onClick={() => addToList(item)}>
                       {inStock ? "＋ Add to my list" : "View item"}
