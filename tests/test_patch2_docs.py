@@ -256,7 +256,7 @@ def test_open_questions_are_wellformed_and_current(project):
     lines = [l for l in qs.splitlines() if l.strip()]
     assert lines and all(l.startswith("- ") for l in lines)
     text = "\n".join(lines)
-    for topic in ("shared across all pantries", "outside operating hours", "Temple ID", "super admin"):
+    for topic in ("outside operating hours", "Temple ID", "real location details"):
         assert topic.lower() in text.lower(), f"open question about {topic!r} is missing"
 
 

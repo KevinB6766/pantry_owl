@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { api, Category } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type BarcodeProduct = {
   barcode: string;
@@ -13,8 +13,10 @@ type BarcodeProduct = {
   nutrition_query: string;
 };
 
-type AdminItem = BarcodeProduct & {
-  category_id: number;
+type AdminItem = Omit<BarcodeProduct, "nutrition_query"> & {
+  tags: string[];
+  points_cost: number;
+  nutrition_query: string | null;
   price: number | null;
 };
 
@@ -27,19 +29,13 @@ export default function AdminPage() {
   const [weight, setWeight] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [nutritionQuery, setNutritionQuery] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [tags, setTags] = useState("");
+  const [pointsCost, setPointsCost] = useState("");
   const [price, setPrice] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-
-  useEffect(() => {
-    api<Category[]>("/categories")
-      .then(setCategories)
-      .catch((e: Error) => setError(e.message));
-  }, []);
 
   async function lookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,7 +76,8 @@ export default function AdminPage() {
         body: JSON.stringify({
           barcode: product.barcode,
           name: name.trim(),
-          category_id: Number(categoryId),
+          tags: tags.split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean),
+          points_cost: Number(pointsCost),
           description: description.trim() || null,
           ingredients: ingredients.trim() || null,
           weight: weight.trim() || null,
@@ -92,6 +89,8 @@ export default function AdminPage() {
       setNotice(`${name.trim()} was added to the catalog.`);
       setBarcode("");
       setProduct(null);
+      setTags("");
+      setPointsCost("");
       setPrice("");
     } catch (e) {
       setError((e as Error).message);
@@ -129,11 +128,8 @@ export default function AdminPage() {
           <label htmlFor="item-name">Item name</label>
           <input id="item-name" required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
 
-          <label htmlFor="item-category">Category</label>
-          <select id="item-category" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-            <option value="">Choose a category</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
+          <label htmlFor="item-tags">Tags (comma separated)</label>
+          <input id="item-tags" maxLength={500} value={tags} onChange={(event) => setTags(event.target.value)} />
 
           <label htmlFor="item-description">Description / brand</label>
           <textarea id="item-description" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} />
@@ -150,9 +146,12 @@ export default function AdminPage() {
           <label htmlFor="nutrition-query">USDA nutrition search name</label>
           <input id="nutrition-query" maxLength={200} value={nutritionQuery} onChange={(event) => setNutritionQuery(event.target.value)} />
 
+          <label htmlFor="item-points-cost">Points cost per item</label>
+          <input id="item-points-cost" type="number" min="0" step="1" required value={pointsCost} onChange={(event) => setPointsCost(event.target.value)} />
+
           <label htmlFor="item-price">Price (optional)</label>
           <input id="item-price" type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} />
-          <button type="submit" disabled={saving || !categories.length}>
+          <button type="submit" disabled={saving}>
             {saving ? "Adding item…" : "Add item to catalog"}
           </button>
         </form>

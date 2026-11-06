@@ -4,10 +4,10 @@ Project docs: [PROJECT.md](PROJECT.md) · [DELIVERABLES.md](DELIVERABLES.md) · 
 
 ## 1. Supabase
 1. Create a project at supabase.com.
-2. SQL Editor → paste and run `supabase/schema.sql` (tables, RLS, seed data).
+2. SQL Editor → paste and run `supabase/schema.sql` (idempotent schema/migration, RLS and generic item seed data). Existing category slugs are migrated to tags and the old categories table is removed. No real pantry location is seeded; add verified location details and hours before launch.
 3. Project Settings → API Keys: use the `sb_secret_...` key for backend `SUPABASE_SERVICE_KEY` and the `sb_publishable_...` key for frontend `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Keep the secret key server-side.
 4. (Optional for dev) Authentication → Providers → Email → turn off "Confirm email".
-5. To enable admin item tools, run the current `supabase/schema.sql` so the `profiles` table and barcode columns exist. Sign in once with the intended admin account, then promote that profile in the SQL Editor with `update public.profiles set role = 'admin' where email = 'admin@example.com';`. Admins can look up 12- or 13-digit barcodes in Open Food Facts, review the imported details, and save the item to the shared catalog.
+5. To enable admin item tools, sign in once with the intended admin account, then promote that profile in the SQL Editor with `update public.profiles set role = 'admin' where email = 'admin@example.com';`. Admins can look up 12- or 13-digit barcodes in Open Food Facts, review the imported details, assign tags and point cost, and save the item to the shared catalog.
 
 ## 2. USDA key
 Get a free key at https://fdc.nal.usda.gov/api-key-signup.html

@@ -30,8 +30,8 @@ All roles can log in.
 | Name | |
 | Price | |
 | Image URL | Supports carousel (multiple images) |
-| Tags | vegan, vegetarian, halal, kosher, canned, fruit, veggie, grain, pasta, etc. |
-| Points cost | Points an item costs per unit |
+| Tags | vegan, vegetarian, halal, kosher, canned, fruit, veggie, grain, pasta, etc.; replaces categories |
+| Points cost | Shared default points cost per unit; a location may override it |
 | Nutrition label image | |
 | Weight | |
 | Ingredients text | |
@@ -87,7 +87,8 @@ One-off changes: holidays, breaks, weather, emergencies.
 | Location ID + Item ID | Together identify the row |
 | Amount | Quantity in stock at this location |
 | Available | Manual override (out of stock) |
-| Limit per person | Nullable integer. `null` = no limit. Example: toiletries = 2 at this pantry |
+| Limit per person | Nullable integer per week. `null` = no limit. Example: toiletries = 2 at this pantry |
+| Points cost override | Nullable integer; overrides the shared item cost at this location |
 
 The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, availability and limits are per location.
 
@@ -116,19 +117,22 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - Balance can never exceed the location's weekly points.
 - Unspent points **do not carry over**; every week starts full.
 - Checkout cannot spend more points than remain this week.
+- Each location has a separate weekly balance for a person.
 - Balance is derived: weekly points minus points spent in orders at this location this week.
 
 **Per-person item limits (per location)**
 - Stored on the location item as `limit_per_person` (for example, toiletries = 2).
+- Reset with the location's weekly points period; tracked per Temple ID, location and item.
 - Shown and enforced in the user's shopping list and again on the cashier screen.
 
 **Identity (for now)**
 - A person is identified by their **Temple ID**. No client account or email is required.
+- The database stores a trimmed Temple ID in plaintext because cashier entry and weekly checks need a stable key. Only the trusted backend/service role and authorized staff can read orders; never include Temple IDs in public responses or logs.
 - The Temple ID and the **location ID** are included in the QR code and stored on each order.
 - Weekly points and limits are tracked per Temple ID per location.
 
 **Staff scope**
-- Cashiers and stockers belong to one location and can only act on that location's stock and orders.
+- Cashiers and stockers belong to one location and can only act on that location's stock and orders. Admins are global.
 
 **Access model**
 - Users have **read-only** access to the database (public key plus RLS `select` only).
@@ -137,6 +141,7 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 - The **cashier scans it, verifies the physical items**, edits if needed, and confirms.
 - All writes (checkout, stock, items, accounts) go through the backend by staff roles.
 - Checkout runs as one atomic database function that checks stock, limits and points for that location, records the order, and rejects a QR that was already redeemed.
+- The QR includes a unique nonce, and checkout rejects any nonce already recorded in an order.
 
 ---
 
@@ -188,19 +193,15 @@ The item catalog (name, tags, images, nutrition, points cost) is shared. Stock, 
 ---
 
 ## 5. Open Questions
-- Keep `categories` or replace with tags?
 - Can guests build and save a list without an account?
 - Render free tier sleeps; upgrade or keep-alive?
-- Is the Temple ID entered by the client or verified by the cashier (for example, checked against a physical ID)? Should Temple IDs be stored as-is or hashed?
+- Is the Temple ID verified by the cashier against a physical ID?
 - Email and account login for clients are set aside for now; revisit for pings, reports and chat
-- Do per-person limits reset weekly, or apply per visit?
-- Is a person's weekly 16 points shared across all pantries, or does each pantry give its own 16?
-- Can a person shop at more than one location in the same week, and do limits then apply per location or overall?
-- Are points costs the same at every location, or can a location override them?
-- Are admins per location or across all locations (super admin)?
 - Should the user pick a location on first open, or detect it (nearest by coordinates)?
 - Can checkout happen outside operating hours, or is it blocked?
 - Can a cashier override a limit or the points cap?
+- What are the real location details and opening hours for initial location records?
+- What point costs should be assigned to the existing sample items?
 - How are push pings delivered (web push, email)?
 - Live chat: real-time staff chat or a bot?
 - Recipe lookup: external API or built in?

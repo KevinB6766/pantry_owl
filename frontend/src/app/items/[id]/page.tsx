@@ -36,7 +36,7 @@ export default function ItemPage() {
     <>
       <Link href="/">← Back</Link>
       <h1>{item.name}</h1>
-      <p className="muted">{item.categories?.name}</p>
+      {item.tags.length > 0 && <p className="muted">{item.tags.join(", ")}</p>}
       <p>{item.description}</p>
       {item.price != null && <p><strong>${item.price.toFixed(2)}</strong></p>}
       <button onClick={addToList}>Add to shopping list</button>

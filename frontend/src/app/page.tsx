@@ -2,35 +2,35 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api, Category, Item } from "@/lib/api";
+import { api, Item } from "@/lib/api";
 
 export default function Home() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [items, setItems] = useState<Item[]>([]);
-  const [category, setCategory] = useState<string | null>(null);
+  const [tag, setTag] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api<Category[]>("/categories").then(setCategories).catch((e) => setError(e.message));
+    api<string[]>("/tags").then(setTags).catch((e) => setError(e.message));
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
-    if (category) params.set("category", category);
+    if (tag) params.set("tag", tag);
     if (q) params.set("q", q);
     api<Item[]>(`/items?${params}`).then(setItems).catch((e) => setError(e.message));
-  }, [category, q]);
+  }, [tag, q]);
 
   return (
     <>
       <h1>Pantry</h1>
       <input placeholder="Search items…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="chips">
-        <button className={`chip ${category === null ? "active" : ""}`} onClick={() => setCategory(null)}>All</button>
-        {categories.map((c) => (
-          <button key={c.id} className={`chip ${category === c.slug ? "active" : ""}`} onClick={() => setCategory(c.slug)}>
-            {c.name}
+        <button className={`chip ${tag === null ? "active" : ""}`} onClick={() => setTag(null)}>All</button>
+        {tags.map((itemTag) => (
+          <button key={itemTag} className={`chip ${tag === itemTag ? "active" : ""}`} onClick={() => setTag(itemTag)}>
+            {itemTag}
           </button>
         ))}
       </div>
@@ -39,7 +39,7 @@ export default function Home() {
         {items.map((i) => (
           <Link key={i.id} href={`/items/${i.id}`} className="card">
             <strong>{i.name}</strong>
-            <div className="muted">{i.categories?.name}</div>
+            <div className="muted">{i.tags.join(", ")}</div>
             {i.price != null && <div>${i.price.toFixed(2)}</div>}
           </Link>
         ))}

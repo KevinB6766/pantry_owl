@@ -12,33 +12,33 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [x] Add PROJECT / DELIVERABLES / CURRENT_STATE to repo
 
 ## D2. Database
-- [~] Items table (exists; missing most spec fields)
-- [ ] Immutable Item ID enforced (trigger)
-- [ ] Locations table (immutable Location ID, name, campus, building/room, street address, lat/long, directions and accessibility notes, phone/email, photo, timezone, weekly points default 16, week start day, active)
-- [ ] Location hours table (weekly schedule, multiple windows per day)
-- [ ] Location closures / special hours table (holidays, emergencies, with user-facing message)
-- [ ] Seed one or two sample locations with hours
-- [ ] Location items table: per-location amount, availability override, `limit_per_person` (nullable)
-- [ ] Item catalog fields (shared): tags, points cost, nutrition label image, weight, ingredients, combos, added date, extra images
-- [ ] Staff profiles tied to a location (cashier, stocker); admin scope decided
-- [ ] Weekly points per location (default 16, cap = weekly points, no carryover; balance derived from this week's spend at that location)
-- [ ] Orders and order_items, keyed by Temple ID and location ID (store points and quantity per line; used for weekly points, limits and dashboard)
-- [ ] Atomic checkout function (stock, limits, points, duplicate-QR rejection)
-- [ ] RLS: read-only for users, no public writes
-- [ ] Profiles table (immutable Acct ID, permissions, email)
+- [~] Items table, migrated from categories to tags; points costs still need to be assigned
+- [x] Immutable Item ID enforced (trigger)
+- [x] Locations table (immutable ID, contact/address fields, timezone, weekly points default 16, Monday week start, active)
+- [x] Location hours table (weekly schedule, multiple windows per day)
+- [x] Location closures / special hours table (message and replacement hours)
+- [ ] Seed one or two real locations with hours (waiting for verified pantry details)
+- [x] Location items table: per-location amount, availability, `limit_per_person` (nullable), points-cost override
+- [x] Item catalog fields: tags, points cost, nutrition label image, weight, ingredients, combos, added date, extra images
+- [x] Staff profiles tied to a location (cashier/stocker); admins are global
+- [x] Weekly points per location (default 16, cap = weekly points, no carryover; balance derived from this week's spend)
+- [x] Orders and order_items, keyed by Temple ID and location ID (snapshot points and quantities)
+- [~] Atomic checkout function (stock, weekly limits, points, duplicate-QR nonce rejection; live database verification pending)
+- [x] RLS: public reads for catalog/location data; no direct public writes
+- [x] Profiles table (immutable account ID, role, email)
 - [~] Shopping lists (exists, server-side)
 - [ ] Transactions, stars/pings, splash notices, reports, chat tables
-- [~] Seed data (7 generic items; replace with pantry items)
+- [~] Seed data (7 generic items; configure point costs and replace with pantry items)
 
 ## D3. Auth and Roles
-- [~] Login for all roles (email/password works; no roles)
-- [ ] User / Cashier / Stocker / Admin permissions enforced in API
+- [~] Login for staff roles (email/password works; role profiles exist)
+- [~] User / Cashier / Stocker / Admin permissions enforced in API (admin catalog and checkout checks exist; remaining routes pending)
 - [ ] Admin account control, including removing cashiers
-- [ ] Staff limited to their own location
+- [~] Staff limited to their own location (checkout checks exist; stocker routes pending)
 
 ## D4. Item Browsing
-- [~] Item list, search, category filter, detail page
-- [ ] Tag filtering
+- [~] Item list, search, tag filter, detail page
+- [x] Tag filtering
 - [ ] Image carousel
 - [~] Nutrition (USDA table exists; label image and ingredients missing)
 - [ ] Weight display
@@ -65,7 +65,7 @@ Status key: `[ ]` not started · `[~]` partly in repo · `[x]` done
 - [ ] Update availability on restock
 
 ## D8. Admin Dashboard
-- [~] Admin item creation from a reviewed 12- or 13-digit barcode lookup (Open Food Facts)
+- [x] Admin item creation from a reviewed 12- or 13-digit barcode lookup (Open Food Facts)
 - [ ] Bought items
 - [ ] Items left
 - [ ] Most popular

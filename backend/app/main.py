@@ -89,7 +89,8 @@ def lookup_barcode(barcode: str, _: str = Depends(require_admin)):
 class AdminItemCreate(BaseModel):
     barcode: str = Field(pattern=r"^[0-9]{12,13}$")
     name: str = Field(min_length=1, max_length=200)
-    category_id: int = Field(gt=0)
+    tags: list[str] = Field(default_factory=list, max_length=30)
+    points_cost: int = Field(ge=0)
     description: Optional[str] = Field(default=None, max_length=2000)
     ingredients: Optional[str] = Field(default=None, max_length=10000)
     weight: Optional[str] = Field(default=None, max_length=100)
@@ -110,8 +111,10 @@ def create_admin_item(entry: AdminItemCreate, _: str = Depends(require_admin)):
     if duplicate:
         raise HTTPException(status_code=409, detail="An item with this barcode already exists")
 
+    item_data = entry.model_dump()
+    item_data["tags"] = sorted({tag.strip().lower() for tag in entry.tags if tag.strip()})
     try:
-        result = supabase.table("items").insert(entry.model_dump()).execute()
+        result = supabase.table("items").insert(item_data).execute()
     except APIError as exc:
         if getattr(exc, "code", None) == "23505":
             raise HTTPException(status_code=409, detail="An item with this barcode already exists") from exc
@@ -119,17 +122,17 @@ def create_admin_item(entry: AdminItemCreate, _: str = Depends(require_admin)):
     return result.data[0]
 
 
-@app.get("/categories")
-def categories():
-    return supabase.table("categories").select("*").order("name").execute().data
+@app.get("/tags")
+def tags():
+    rows = supabase.table("items").select("tags").execute().data
+    return sorted({tag for row in rows for tag in row.get("tags", [])})
 
 
 @app.get("/items")
-def items(category: Optional[str] = None, q: Optional[str] = None):
-    select = "*, categories!inner(name, slug)" if category else "*, categories(name, slug)"
-    query = supabase.table("items").select(select).order("name")
-    if category:
-        query = query.eq("categories.slug", category)
+def items(tag: Optional[str] = None, q: Optional[str] = None):
+    query = supabase.table("items").select("*").order("name")
+    if tag:
+        query = query.contains("tags", [tag.strip().lower()])
     if q:
         query = query.ilike("name", f"%{q}%")
     return query.execute().data
@@ -137,7 +140,7 @@ def items(category: Optional[str] = None, q: Optional[str] = None):
 
 @app.get("/items/{item_id}")
 def item(item_id: int):
-    res = supabase.table("items").select("*, categories(name, slug)").eq("id", item_id).execute()
+    res = supabase.table("items").select("*").eq("id", item_id).execute()
     if not res.data:
         raise HTTPException(404, "Item not found")
     return res.data[0]

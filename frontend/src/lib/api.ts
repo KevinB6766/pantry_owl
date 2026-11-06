@@ -1,13 +1,12 @@
 import { supabase } from "./supabase";
 
-export type Category = { id: number; name: string; slug: string };
 export type Item = {
   id: number;
   name: string;
   description: string | null;
   price: number | null;
   image_url: string | null;
-  categories: { name: string; slug: string } | null;
+  tags: string[];
 };
 export type Nutrition = {
   source: string;
