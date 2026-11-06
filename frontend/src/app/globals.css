@@ -165,12 +165,14 @@ main { width: min(1200px, 100%); min-height: calc(100vh - 190px); margin: 0 auto
   display: grid;
   width: 42px;
   height: 42px;
+  padding: 0;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--paper);
   color: var(--accent-dark);
   font-size: 1.25rem;
+  line-height: 1;
 }
 .carousel-controls button:hover { border-color: var(--accent); background: var(--accent-light); }
 .item-carousel {
